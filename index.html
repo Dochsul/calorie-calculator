@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор калорий и БЖУ</title>
+    <script>
+        function calculateCalories() {
+            var age = parseFloat(document.getElementById("age").value);
+            var weight = parseFloat(document.getElementById("weight").value);
+            var height = parseFloat(document.getElementById("height").value);
+            var gender = document.getElementById("gender").value;
+            var activity = parseFloat(document.getElementById("activity").value);
+            var goal = document.getElementById("goal").value;
+            var formula = document.getElementById("formula").value;
+            var isChild = document.getElementById("isChild").checked;
+            var childAgeGroup = document.getElementById("childAgeGroup").value;
+            var isPregnant = document.getElementById("pregnancy").checked;
+            var isBreastfeeding = document.getElementById("breastfeeding").checked;
+            var cycle = document.getElementById("cycle").checked;
+
+            var calories;
+
+            // Если выбран расчёт для детей
+            if (isChild) {
+                switch (childAgeGroup) {
+                    case "infant":
+                        calories = 800; // Примерная калорийность для младенцев
+                        break;
+                    case "toddler":
+                        calories = 1200; // Для детей 1-3 лет
+                        break;
+                    case "child4_8":
+                        calories = 1600; // Для детей 4-8 лет
+                        break;
+                    case "child9_13":
+                        calories = (gender == "male") ? 1800 : 1600; // Для детей 9-13 лет
+                        break;
+                    case "teen14_18":
+                        calories = (gender == "male") ? 2400 : 2000; // Для подростков 14-18 лет
+                        break;
+                }
+                // Учет физической активности у детей
+                calories *= activity;
+            } else {
+                // Рассчитываем BMR по выбранной формуле для взрослых
+                var bmr;
+                if (formula == "mifflin") {
+                    bmr = (gender == "male") ? 
+                        (10 * weight + 6.25 * height - 5 * age + 5) : 
+                        (10 * weight + 6.25 * height - 5 * age - 161);
+                } else {
+                    bmr = (gender == "male") ? 
+                        (88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)) :
+                        (447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age));
+                }
+
+                // Учет физической активности
+                calories = bmr * activity;
+
+                // Учет беременности и грудного вскармливания
+                if (isPregnant) {
+                    calories += 300; // Дополнительные калории для беременности
+                }
+                if (isBreastfeeding) {
+                    calories += 500; // Дополнительные калории для грудного вскармливания
+                }
+
+                // Учет менструального цикла
+                if (cycle) {
+                    calories += 100; // Дополнительные калории во время менструации
+                }
+
+                // Коррекция в зависимости от цели
+                if (goal == "lose20") {
+                    calories *= 0.8; // Снижение на 20%
+                } else if (goal == "lose15") {
+                    calories *= 0.85; // Снижение на 15%
+                } else if (goal == "muscleGain") {
+                    calories *= 1.15; // Увеличение на 15% для набора мышечной массы
+                }
+            }
+
+            // Расчет БЖУ
+            var proteins = calories * 0.3 / 4; // 30% белков, 1 г белка = 4 ккал
+            var fats = calories * 0.3 / 9; // 30% жиров, 1 г жира = 9 ккал
+            var carbs = calories * 0.4 / 4; // 40% углеводов, 1 г углеводов = 4 ккал
+
+            // Вывод результатов
+            document.getElementById("result").innerHTML = 
+                "Калории: " + Math.round(calories) + " ккал<br>" +
+                "Белки: " + Math.round(proteins) + " г<br>" +
+                "Жиры: " + Math.round(fats) + " г<br>" +
+                "Углеводы: " + Math.round(carbs) + " г";
+        }
+    </script>
+</head>
+<body>
+    <h1>Калькулятор калорий и БЖУ</h1>
+    <label>Возраст: <input type="number" id="age"></label><br>
+    <label>Вес (кг): <input type="number" id="weight"></label><br>
+    <label>Рост (см): <input type="number" id="height"></label><br>
+    <label>Пол: 
+        <select id="gender">
+            <option value="male">Мужчина</option>
+            <option value="female">Женщина</option>
+        </select>
+    </label><br>
+    <label>Формула расчёта:
+        <select id="formula">
+            <option value="mifflin">Миффлина-Сан Жеора</option>
+            <option value="harris">Харриса-Бенедикта</option>
+        </select>
+    </label><br>
+    <label>Цель:
+        <select id="goal">
+            <option value="maintain">Поддержание веса</option>
+            <option value="lose20">Похудение 20%</option>
+            <option value="lose15">Похудение 15%</option>
+            <option value="muscleGain">Набор мышечной массы</option>
+        </select>
+    </label><br>
+    <label>Активность:
+        <select id="activity">
+            <option value="1.2">Минимальная</option>
+            <option value="1.375">Легкая</option>
+            <option value="1.55">Средняя</option>
+            <option value="1.725">Высокая</option>
+        </select>
+    </label><br>
+    <label>Дети: <input type="checkbox" id="isChild"></label><br>
+    <div id="childSection" style="display: none;">
+        <label>Возрастная группа:
+            <select id="childAgeGroup">
+                <option value="infant">0-1 год</option>
+                <option value="toddler">1-3 года</option>
+                <option value="child4_8">4-8 лет</option>
+                <option value="child9_13">9-13 лет</option>
+                <option value="teen14_18">14-18 лет</option>
+            </select>
+        </label><br>
+    </div>
+    <label>Беременность: <input type="checkbox" id="pregnancy"></label><br>
+    <label>Грудное вскармливание: <input type="checkbox" id="breastfeeding"></label><br>
+    <label>Менструальный цикл: <input type="checkbox" id="cycle"></label><br>
+    <button onclick="calculateCalories()">Рассчитать</button>
+
+    <div id="result"></div>
+</body>
+</html>
