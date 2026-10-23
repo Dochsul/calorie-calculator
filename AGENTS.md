@@ -27,6 +27,16 @@ Serves the page on <http://localhost:3000> through `nginx:alpine`.
   no state to reset: `docker compose -f docker-compose.base44.yml down` and
   `up -d` is always a clean start.
 
+## Tests
+
+The pure calculation functions (`calcBmr`, `calcChildCalories`, `CHILD_CALORIES`)
+live in `calc.js`, shared by the page and the tests via a `module.exports` guard
+(in the browser they stay global). Run the tests with Node:
+
+```sh
+docker run --rm -v "$PWD":/app -w /app node:22-alpine node tests/calc.test.js
+```
+
 ## Verifying it works
 
 Load `/`, fill Возраст / Вес / Рост, press **Рассчитать** and confirm the

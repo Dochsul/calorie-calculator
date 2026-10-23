@@ -17,6 +17,7 @@ services:
       # Only the page itself is exposed; the rest of the checkout (.git, ...)
       # is deliberately not part of the web root.
       - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./calc.js:/usr/share/nginx/html/calc.js:ro
     restart: on-failure
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
