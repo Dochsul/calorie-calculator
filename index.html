@@ -341,49 +341,44 @@
         }
 
         function calculateCalories() {
-            var gender = els.gender.value;
             var activity = parseFloat(els.activity.value);
-            var isChild = els.isChild.checked;
-            var calories;
 
-            if (isChild) {
-                calories = calcChildCalories(els.childAgeGroup.value, gender);
+            if (els.isChild.checked) {
+                var calories = calcTotalCalories({
+                    isChild: true,
+                    childAgeGroup: els.childAgeGroup.value,
+                    gender: els.gender.value,
+                    activity: activity
+                });
                 if (calories === null) {
                     showError("Выберите возрастную группу ребёнка.");
                     return;
                 }
-                // Учет физической активности у детей
-                calories *= activity;
-            } else {
-                var age = parseFloat(els.age.value);
-                var weight = parseFloat(els.weight.value);
-                var height = parseFloat(els.height.value);
-
-                if (!age || !weight || !height || age <= 0 || weight <= 0 || height <= 0) {
-                    showError("Пожалуйста, заполните возраст, вес и рост положительными числами.");
-                    return;
-                }
-
-                calories = calcBmr(weight, height, age, gender, els.formula.value) * activity;
-
-                // Учет беременности и грудного вскармливания
-                if (els.pregnancy.checked) calories += 300;
-                if (els.breastfeeding.checked) calories += 500;
-                // Учет менструального цикла
-                if (els.cycle.checked) calories += 100;
-
-                // Коррекция в зависимости от цели
-                var goal = els.goal.value;
-                if (goal === "lose20") {
-                    calories *= 0.8;
-                } else if (goal === "lose15") {
-                    calories *= 0.85;
-                } else if (goal === "muscleGain") {
-                    calories *= 1.15;
-                }
+                showResult(calories);
+                return;
             }
 
-            showResult(calories);
+            var age = parseFloat(els.age.value);
+            var weight = parseFloat(els.weight.value);
+            var height = parseFloat(els.height.value);
+
+            if (!age || !weight || !height || age <= 0 || weight <= 0 || height <= 0) {
+                showError("Пожалуйста, заполните возраст, вес и рост положительными числами.");
+                return;
+            }
+
+            showResult(calcTotalCalories({
+                weight: weight,
+                height: height,
+                age: age,
+                gender: els.gender.value,
+                formula: els.formula.value,
+                activity: activity,
+                isPregnant: els.pregnancy.checked,
+                isBreastfeeding: els.breastfeeding.checked,
+                isCycle: els.cycle.checked,
+                goal: els.goal.value
+            }));
         }
 
         els.isChild.addEventListener("change", syncSections);

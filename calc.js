@@ -30,11 +30,46 @@ function calcChildCalories(childAgeGroup, gender) {
     return typeof norm === "object" ? norm[gender] : norm;
 }
 
+// Полный суточный расчёт: BMR (или детская норма) × активность,
+// надбавки (беременность, ГВ, цикл) и коррекция по цели.
+// Для детей цель, надбавки и взрослые поля игнорируются.
+// Возвращает null, если возрастная группа ребёнка неизвестна.
+function calcTotalCalories(input) {
+    var calories;
+
+    if (input.isChild) {
+        calories = calcChildCalories(input.childAgeGroup, input.gender);
+        if (calories === null) return null;
+        // Учет физической активности у детей
+        return calories * input.activity;
+    }
+
+    calories = calcBmr(input.weight, input.height, input.age, input.gender, input.formula) * input.activity;
+
+    // Учет беременности и грудного вскармливания
+    if (input.isPregnant) calories += 300;
+    if (input.isBreastfeeding) calories += 500;
+    // Учет менструального цикла
+    if (input.isCycle) calories += 100;
+
+    // Коррекция в зависимости от цели
+    if (input.goal === "lose20") {
+        calories *= 0.8;
+    } else if (input.goal === "lose15") {
+        calories *= 0.85;
+    } else if (input.goal === "muscleGain") {
+        calories *= 1.15;
+    }
+
+    return calories;
+}
+
 // Экспорт для Node (тесты); в браузере module не определён
 if (typeof module !== "undefined" && module.exports) {
     module.exports = {
         CHILD_CALORIES: CHILD_CALORIES,
         calcBmr: calcBmr,
-        calcChildCalories: calcChildCalories
+        calcChildCalories: calcChildCalories,
+        calcTotalCalories: calcTotalCalories
     };
 }

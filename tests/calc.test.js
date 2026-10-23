@@ -1,4 +1,4 @@
-// Zero-dependency tests for calcBmr and calcChildCalories.
+// Zero-dependency tests for calcBmr, calcChildCalories and calcTotalCalories.
 // Run: node tests/calc.test.js
 var assert = require("assert");
 var calc = require("../calc.js");
@@ -22,6 +22,24 @@ function closeTo(actual, expected) {
         Math.abs(actual - expected) < 1e-6,
         "expected " + expected + ", got " + actual
     );
+}
+
+// Базовый взрослый сценарий: male 70kg/175cm/30y, mifflin, активность 1.2
+function baseline(overrides) {
+    var input = {
+        weight: 70,
+        height: 175,
+        age: 30,
+        gender: "male",
+        formula: "mifflin",
+        activity: 1.2,
+        isPregnant: false,
+        isBreastfeeding: false,
+        isCycle: false,
+        goal: "maintain"
+    };
+    for (var key in overrides) input[key] = overrides[key];
+    return input;
 }
 
 // --- calcBmr: Миффлина-Сан Жеора ---
@@ -85,6 +103,86 @@ test("teen14_18: male 2400, female 2000", function () {
 test("unknown age group returns null", function () {
     assert.strictEqual(calc.calcChildCalories("unknown", "male"), null);
     assert.strictEqual(calc.calcChildCalories("", "female"), null);
+});
+
+// --- calcTotalCalories: активность и цели (mifflin male 70/175/30: BMR 1648.75) ---
+test("maintain: BMR * 1.2 = 1978.5", function () {
+    closeTo(calc.calcTotalCalories(baseline({})), 1978.5);
+});
+
+test("lose20: total * 0.8 = 1582.8", function () {
+    closeTo(calc.calcTotalCalories(baseline({ goal: "lose20" })), 1582.8);
+});
+
+test("lose15: total * 0.85 = 1681.725", function () {
+    closeTo(calc.calcTotalCalories(baseline({ goal: "lose15" })), 1681.725);
+});
+
+test("muscleGain: total * 1.15 = 2275.275", function () {
+    closeTo(calc.calcTotalCalories(baseline({ goal: "muscleGain" })), 2275.275);
+});
+
+test("harris formula with high activity = 2627.808", function () {
+    closeTo(calc.calcTotalCalories(baseline({ formula: "harris", activity: 1.55 })), 2627.808);
+});
+
+test("female mifflin with light activity = 2038.78125", function () {
+    closeTo(
+        calc.calcTotalCalories(baseline({ gender: "female", activity: 1.375 })),
+        2038.78125
+    );
+});
+
+// --- calcTotalCalories: надбавки ---
+test("pregnancy adds 300 after activity", function () {
+    closeTo(calc.calcTotalCalories(baseline({ isPregnant: true })), 2278.5);
+});
+
+test("breastfeeding adds 500 after activity", function () {
+    closeTo(calc.calcTotalCalories(baseline({ isBreastfeeding: true })), 2478.5);
+});
+
+test("cycle adds 100 after activity", function () {
+    closeTo(calc.calcTotalCalories(baseline({ isCycle: true })), 2078.5);
+});
+
+test("extras combine before goal correction: female = 2022.405", function () {
+    closeTo(
+        calc.calcTotalCalories(
+            baseline({ gender: "female", isBreastfeeding: true, isCycle: true, goal: "lose15" })
+        ),
+        2022.405
+    );
+});
+
+// --- calcTotalCalories: дети ---
+test("child toddler with activity 1.2 = 1440", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "toddler", gender: "female", activity: 1.2 }), 1440);
+});
+
+test("child child9_13 female with activity 1.2 = 1920", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "child9_13", gender: "female", activity: 1.2 }), 1920);
+});
+
+test("child teen14_18 male with activity 1.725 = 4140", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "teen14_18", gender: "male", activity: 1.725 }), 4140);
+});
+
+test("child: goal and adult extras are ignored", function () {
+    closeTo(
+        calc.calcTotalCalories({
+            isChild: true, childAgeGroup: "toddler", gender: "male",
+            activity: 1.2, goal: "muscleGain", isPregnant: true, isBreastfeeding: true
+        }),
+        1440
+    );
+});
+
+test("child: unknown age group returns null", function () {
+    assert.strictEqual(
+        calc.calcTotalCalories({ isChild: true, childAgeGroup: "nope", gender: "male", activity: 1.2 }),
+        null
+    );
 });
 
 console.log("");
