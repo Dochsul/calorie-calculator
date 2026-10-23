@@ -32,10 +32,17 @@ Serves the page on <http://localhost:3000> through `nginx:alpine`.
 Load `/`, fill Возраст / Вес / Рост, press **Рассчитать** and confirm the
 `#result` block shows calories plus protein/fat/carbohydrate grams.
 
-## Known pre-existing quirks (not environment issues)
+## App behavior notes
 
-- The **Дети** checkbox has no handler attached, so `#childSection` (the child age
-  group select) stays hidden and the child branch of the calculation is
-  unreachable from the UI.
+- The **Дети** checkbox toggles `#childSection`; while it is checked, the adult
+  fields (age/weight/height/formula/goal) and the pregnancy/breastfeeding/cycle
+  extras are hidden, since the child branch of the calculation ignores them.
+- The pregnancy/breastfeeding/cycle extras are only enabled when Пол is
+  Женщина; switching to Мужчина clears them.
+- Missing/invalid age, weight or height shows an inline error instead of
+  producing NaN results.
 - The activity multiplier is applied to the child calorie presets as well as to
-  the adult BMR.
+  the adult BMR (intentional, kept from the original logic).
+- The formulas (Mifflin-St Jeor, Harris-Benedict), activity multipliers, goal
+  factors, child presets and the 30/30/40 macro split are unchanged from the
+  original single-file version — treat them as the source of truth.
