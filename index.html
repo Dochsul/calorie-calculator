@@ -219,6 +219,11 @@
                 "Жиры: " + Math.round(fats) + " г<br>" +
                 "Углеводы: " + Math.round(carbs) + " г";
         }
+
+        function toggleChildSection() {
+            var showChildren = document.getElementById("isChild").checked;
+            document.getElementById("childSection").style.display = showChildren ? "block" : "none";
+        }
     </script>
 </head>
 <body>
@@ -254,7 +259,7 @@
             <option value="1.725">Высокая</option>
         </select>
     </label><br>
-    <label>Дети: <input type="checkbox" id="isChild"></label><br>
+    <label>Дети: <input type="checkbox" id="isChild" onchange="toggleChildSection()"></label><br>
     <div id="childSection" style="display: none;">
         <label>Возрастная группа:
             <select id="childAgeGroup">
