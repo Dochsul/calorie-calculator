@@ -17,10 +17,19 @@ Serves the page on <http://localhost:3000> through `nginx:alpine`.
 
 ## Non-obvious details
 
-- `index.html` is bind-mounted as the only file in the web root, so the rest of
-  the checkout (including `.git`) is never served. **If you add JS/CSS/asset
-  files, add a matching bind mount in `docker-compose.base44.yml`** — otherwise
-  they will 404.
+- Only the page files are bind-mounted into the web root (`index.html`, `calc.js`),
+  so the rest of the checkout (including `.git`) is never served. **If you add
+  JS/CSS/asset files, add a matching bind mount in `docker-compose.base44.yml`** —
+  otherwise they will 404 and the page silently loses that script.
+- **Never "simplify" this into a whole-directory mount.** Mounting the checkout
+  root (e.g. `./:/usr/share/nginx/html:ro`) makes nginx answer **403 Forbidden**
+  for every request: the sandbox checkout directory is only traversable by root
+  (`drwx------ root:root`), so nginx's worker user cannot reach the files below it
+  (verified by running `nginx:alpine` with that mount and curling it). Mounting the
+  individual files works because their parent directory belongs to nginx's own image.
+- The compose healthcheck fetches **both** `/` and `/calc.js`, so a dropped script
+  mount turns the container unhealthy instead of leaving a page that loads but
+  cannot calculate anything.
 - nginx reads the mounted file from disk on every request, so edits appear on a
   plain reload; there is no watcher and no build to wait for.
 - The page is a static file with no server-side logic, so the compose stack has

@@ -20,7 +20,12 @@ services:
       - ./calc.js:/usr/share/nginx/html/calc.js:ro
     restart: on-failure
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      # Probes both files the page needs: index.html is the page itself and
+      # calc.js carries all calculation logic. A missing/broken mount used to
+      # leave the container "healthy" while the calculator did nothing.
+      test:
+        - CMD-SHELL
+        - 'wget -q -O /dev/null http://127.0.0.1/ || { echo "index.html not served"; exit 1; }; wget -q -O /dev/null http://127.0.0.1/calc.js || { echo "calc.js not served"; exit 1; }'
       interval: 10s
       timeout: 3s
       retries: 5
