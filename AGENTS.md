@@ -46,6 +46,9 @@ live in `calc.js`, shared by the page and the tests via a `module.exports` guard
 docker run --rm -v "$PWD":/app -w /app node:22-alpine node tests/calc.test.js
 ```
 
+CI runs the same command on every pull request and push to `main`
+(`.github/workflows/ci.yml`).
+
 ## Verifying it works
 
 Load `/`, fill Возраст / Вес / Рост, press **Рассчитать** and confirm the
