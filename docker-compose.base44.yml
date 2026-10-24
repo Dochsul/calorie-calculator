@@ -1,0 +1,32 @@
+# Base44 sandbox environment.
+#
+# This repo is a single static page (index.html) with no build step, no package
+# manager and no runtime dependencies, so there is no dev server to run. nginx
+# serves index.html straight from the bind mount: every request re-reads the
+# file from disk, so an edit shows up on reload without a rebuild or restart.
+services:
+  web:
+    image: nginx:alpine
+    labels:
+      base44.project: "Калькулятор калорий и БЖУ"
+      base44.kind: "web"
+      base44.port: "3000"
+    ports:
+      - "3000:80"
+    volumes:
+      # Only the page itself is exposed; the rest of the checkout (.git, ...)
+      # is deliberately not part of the web root.
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./calc.js:/usr/share/nginx/html/calc.js:ro
+    restart: on-failure
+    healthcheck:
+      # Probes both files the page needs: index.html is the page itself and
+      # calc.js carries all calculation logic. A missing/broken mount used to
+      # leave the container "healthy" while the calculator did nothing.
+      test:
+        - CMD-SHELL
+        - 'wget -q -O /dev/null http://127.0.0.1/ || { echo "index.html not served"; exit 1; }; wget -q -O /dev/null http://127.0.0.1/calc.js || { echo "calc.js not served"; exit 1; }'
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
