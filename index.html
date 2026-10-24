@@ -129,6 +129,43 @@
         #result:empty {
             display: none;
         }
+
+        /* phones: fill the screen instead of floating a card, tighten the
+           spacing between fields and give the controls touch-sized heights */
+        @media (max-width: 480px) {
+            body {
+                margin: 0 auto;
+                padding: 20px 16px 24px;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            h1 {
+                margin-bottom: 16px;
+                font-size: 20px;
+            }
+
+            label {
+                margin-bottom: 12px;
+            }
+
+            label input[type="number"],
+            label select {
+                min-height: 44px;
+                padding: 9px 12px;
+            }
+
+            button {
+                min-height: 46px;
+            }
+
+            #result {
+                margin-top: 16px;
+                padding: 12px 14px;
+                font-size: 14px;
+                line-height: 1.8;
+            }
+        }
     </style>
     <script>
         function calculateCalories() {
