@@ -40,6 +40,14 @@
             text-align: center;
         }
 
+        .subtitle {
+            margin: -10px 0 20px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: var(--muted);
+            text-align: center;
+        }
+
         /* these <br> tags only separated the plain form rows; the fields below
            control their own spacing, the ones inside #result still break lines */
         body > br {
@@ -75,6 +83,11 @@
             box-shadow: 0 0 0 3px rgba(47, 128, 237, .18);
         }
 
+        label input[type="number"]::placeholder {
+            color: #9aa7b4;
+            font-weight: 400;
+        }
+
         input[type="checkbox"] {
             width: 18px;
             height: 18px;
@@ -90,6 +103,42 @@
 
         #childSection label {
             margin-bottom: 0;
+        }
+
+        .hint {
+            margin: 6px 0 0;
+            font-size: 12px;
+            font-weight: 400;
+            line-height: 1.45;
+            color: var(--muted);
+        }
+
+        /* the optional extras sit in their own block under the fields */
+        .checks {
+            margin-top: 4px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+        }
+
+        label input.invalid,
+        label select.invalid {
+            border-color: #d64545;
+            background: #fdf5f5;
+        }
+
+        #error {
+            margin-top: 14px;
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #8a2b2b;
+            background: #fdf5f5;
+            border: 1px solid #f0cbcb;
+            border-radius: 10px;
+        }
+
+        #error:empty {
+            display: none;
         }
 
         button {
@@ -130,6 +179,19 @@
             display: none;
         }
 
+        /* one row per value: muted label left, number right */
+        .metric {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .metric b {
+            font-size: 1.05em;
+            white-space: nowrap;
+        }
+
         /* phones: fill the screen instead of floating a card, tighten the
            spacing between fields and give the controls touch-sized heights */
         @media (max-width: 480px) {
@@ -143,6 +205,10 @@
             h1 {
                 margin-bottom: 16px;
                 font-size: 20px;
+            }
+
+            .subtitle {
+                margin-bottom: 16px;
             }
 
             label {
@@ -169,6 +235,10 @@
                 margin-top: 10px;
             }
 
+            #error {
+                font-size: 13px;
+            }
+
             #result {
                 margin-top: 16px;
                 padding: 14px;
@@ -178,15 +248,72 @@
         }
     </style>
     <script>
+        function numberValue(id) {
+            return parseFloat(document.getElementById(id).value);
+        }
+
+        // Проверяет поле и добавляет причину в список проблем
+        function checkField(id, title, min, max, problems) {
+            var el = document.getElementById(id);
+            var raw = el.value.trim();
+
+            if (el.validity && el.validity.badInput) {
+                problems.push(title + ": нужно ввести число, например 70.5.");
+                el.classList.add("invalid");
+                return;
+            }
+
+            if (raw === "") {
+                problems.push(title + ": заполни поле.");
+                el.classList.add("invalid");
+                return;
+            }
+
+            var value = parseFloat(raw);
+
+            if (!isFinite(value)) {
+                problems.push(title + ": нужно ввести число.");
+                el.classList.add("invalid");
+            } else if (value < min || value > max) {
+                problems.push(title + ": допустимо от " + min + " до " + max + ".");
+                el.classList.add("invalid");
+            }
+        }
+
+        function metricRow(title, value) {
+            return '<div class="metric"><span>' + title + '</span><b>' + value + '</b></div>';
+        }
+
         function calculateCalories() {
-            var age = parseFloat(document.getElementById("age").value);
-            var weight = parseFloat(document.getElementById("weight").value);
-            var height = parseFloat(document.getElementById("height").value);
+            var isChild = document.getElementById("isChild").checked;
+            var problems = [];
+
+            document.querySelectorAll(".invalid").forEach(function (el) {
+                el.classList.remove("invalid");
+            });
+
+            // Для детей возраст, вес и рост не используются
+            if (!isChild) {
+                checkField("age", "Возраст", 10, 120, problems);
+                checkField("weight", "Вес", 20, 400, problems);
+                checkField("height", "Рост", 80, 250, problems);
+            }
+
+            var errorBox = document.getElementById("error");
+            if (problems.length) {
+                errorBox.innerHTML = problems.join("<br>");
+                document.getElementById("result").innerHTML = "";
+                return;
+            }
+            errorBox.innerHTML = "";
+
+            var age = numberValue("age");
+            var weight = numberValue("weight");
+            var height = numberValue("height");
             var gender = document.getElementById("gender").value;
             var activity = parseFloat(document.getElementById("activity").value);
             var goal = document.getElementById("goal").value;
             var formula = document.getElementById("formula").value;
-            var isChild = document.getElementById("isChild").checked;
             var childAgeGroup = document.getElementById("childAgeGroup").value;
             var isPregnant = document.getElementById("pregnancy").checked;
             var isBreastfeeding = document.getElementById("breastfeeding").checked;
@@ -219,11 +346,11 @@
                 // Рассчитываем BMR по выбранной формуле для взрослых
                 var bmr;
                 if (formula == "mifflin") {
-                    bmr = (gender == "male") ? 
-                        (10 * weight + 6.25 * height - 5 * age + 5) : 
+                    bmr = (gender == "male") ?
+                        (10 * weight + 6.25 * height - 5 * age + 5) :
                         (10 * weight + 6.25 * height - 5 * age - 161);
                 } else {
-                    bmr = (gender == "male") ? 
+                    bmr = (gender == "male") ?
                         (88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)) :
                         (447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age));
                 }
@@ -260,11 +387,11 @@
             var carbs = calories * 0.4 / 4; // 40% углеводов, 1 г углеводов = 4 ккал
 
             // Вывод результатов
-            document.getElementById("result").innerHTML = 
-                "Калории: " + Math.round(calories) + " ккал<br>" +
-                "Белки: " + Math.round(proteins) + " г<br>" +
-                "Жиры: " + Math.round(fats) + " г<br>" +
-                "Углеводы: " + Math.round(carbs) + " г";
+            document.getElementById("result").innerHTML =
+                metricRow("Калории:", Math.round(calories) + " ккал") +
+                metricRow("Белки:", Math.round(proteins) + " г") +
+                metricRow("Жиры:", Math.round(fats) + " г") +
+                metricRow("Углеводы:", Math.round(carbs) + " г");
         }
 
         function toggleChildSection() {
@@ -275,9 +402,10 @@
 </head>
 <body>
     <h1>Калькулятор калорий и БЖУ</h1>
-    <label>Возраст: <input type="number" id="age"></label><br>
-    <label>Вес (кг): <input type="number" id="weight"></label><br>
-    <label>Рост (см): <input type="number" id="height"></label><br>
+    <p class="subtitle">Дневная норма калорий и БЖУ: белки 30%, жиры 30%, углеводы 40%</p>
+    <label>Возраст: <input type="number" id="age" min="10" max="120" placeholder="например, 30"></label><br>
+    <label>Вес (кг): <input type="number" id="weight" min="20" max="400" step="0.1" placeholder="например, 70"></label><br>
+    <label>Рост (см): <input type="number" id="height" min="80" max="250" placeholder="например, 175"></label><br>
     <label>Пол: 
         <select id="gender">
             <option value="male">Мужчина</option>
@@ -306,21 +434,28 @@
             <option value="1.725">Высокая</option>
         </select>
     </label><br>
-    <label>Дети: <input type="checkbox" id="isChild" onchange="toggleChildSection()"></label><br>
-    <div id="childSection" style="display: none;">
-        <label>Возрастная группа:
-            <select id="childAgeGroup">
-                <option value="infant">0-1 год</option>
-                <option value="toddler">1-3 года</option>
-                <option value="child4_8">4-8 лет</option>
-                <option value="child9_13">9-13 лет</option>
-                <option value="teen14_18">14-18 лет</option>
-            </select>
-        </label><br>
+
+    <div class="checks">
+        <label>Дети: <input type="checkbox" id="isChild" onchange="toggleChildSection()"></label><br>
+        <div id="childSection" style="display: none;">
+            <label>Возрастная группа:
+                <select id="childAgeGroup">
+                    <option value="infant">0-1 год</option>
+                    <option value="toddler">1-3 года</option>
+                    <option value="child4_8">4-8 лет</option>
+                    <option value="child9_13">9-13 лет</option>
+                    <option value="teen14_18">14-18 лет</option>
+                </select>
+            </label>
+            <div class="hint">Для детей калории считаются по возрастной группе: возраст, вес и рост не используются.</div>
+        </div>
+        <label>Беременность: <input type="checkbox" id="pregnancy"> +300 ккал</label><br>
+        <label>Грудное вскармливание: <input type="checkbox" id="breastfeeding"> +500 ккал</label><br>
+        <label>Менструальный цикл: <input type="checkbox" id="cycle"> +100 ккал</label><br>
+        <div class="hint">Эти добавки учитываются только во взрослом расчёте.</div>
     </div>
-    <label>Беременность: <input type="checkbox" id="pregnancy"></label><br>
-    <label>Грудное вскармливание: <input type="checkbox" id="breastfeeding"></label><br>
-    <label>Менструальный цикл: <input type="checkbox" id="cycle"></label><br>
+
+    <div id="error" role="alert"></div>
     <button onclick="calculateCalories()">Рассчитать</button>
 
     <div id="result"></div>
