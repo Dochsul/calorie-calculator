@@ -1,0 +1,30 @@
+# Base44 sandbox runbook.
+#
+# The project is a single static page (index.html) with no build step, no
+# dependencies, no database and no external services. One service serves the
+# repo straight from disk, so edits are visible immediately.
+#
+# Note on the server: the repo checkout is only traversable by root
+# (drwx------ root:root), so nginx's worker user gets 403 on it. The Python
+# runtime image runs as root and serves the bind mount as-is.
+services:
+  web:
+    image: python:3.12-slim
+    working_dir: /srv
+    command: ["python3", "-m", "http.server", "3000", "--bind", "0.0.0.0"]
+    ports:
+      - "3000:3000"
+    volumes:
+      # Source bind-mounted from the checkout: edits show up without a rebuild.
+      - ./:/srv:ro
+    restart: on-failure
+    labels:
+      base44.project: "Calorie & BMR Calculator"
+      base44.kind: "web"
+      base44.port: "3000"
+    healthcheck:
+      test: ["CMD", "python3", "-c", 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen("http://127.0.0.1:3000/").status == 200 else 1)']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
