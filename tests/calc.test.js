@@ -185,6 +185,93 @@ test("child: unknown age group returns null", function () {
     );
 });
 
+// --- Доп. покрытие: calcBmr, другие фигуры и дробные значения ---
+test("harris: female 60kg/160cm/25y = 1388.1", function () {
+    closeTo(calc.calcBmr(60, 160, 25, "female", "harris"), 1388.1);
+});
+
+test("mifflin: female 90kg/190cm/45y = 1701.5", function () {
+    closeTo(calc.calcBmr(90, 190, 45, "female", "mifflin"), 1701.5);
+});
+
+test("mifflin: male 68.5kg/172.5cm/31.5y = 1610.625", function () {
+    closeTo(calc.calcBmr(68.5, 172.5, 31.5, "male", "mifflin"), 1610.625);
+});
+
+test("mifflin: zero weight stays finite (948.75, no NaN)", function () {
+    closeTo(calc.calcBmr(0, 175, 30, "male", "mifflin"), 948.75);
+});
+
+// --- Доп. покрытие: дети, остальные группы и активности ---
+test("child: every age group returns a number for both genders", function () {
+    for (var group in calc.CHILD_CALORIES) {
+        assert.strictEqual(typeof calc.calcChildCalories(group, "male"), "number", group + ": male");
+        assert.strictEqual(typeof calc.calcChildCalories(group, "female"), "number", group + ": female");
+    }
+});
+
+test("child infant with activity 1.55 = 1240", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "infant", gender: "male", activity: 1.55 }), 1240);
+});
+
+test("child child9_13 male with activity 1.375 = 2475", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "child9_13", gender: "male", activity: 1.375 }), 2475);
+});
+
+test("child teen14_18 female with activity 1.375 = 2750", function () {
+    closeTo(calc.calcTotalCalories({ isChild: true, childAgeGroup: "teen14_18", gender: "female", activity: 1.375 }), 2750);
+});
+
+test("child: cycle extra and lose20 goal are ignored too", function () {
+    closeTo(
+        calc.calcTotalCalories({
+            isChild: true, childAgeGroup: "toddler", gender: "male",
+            activity: 1.2, isCycle: true, goal: "lose20"
+        }),
+        1440
+    );
+});
+
+// --- Доп. покрытие: комбинации формулы, активности, надбавок и цели ---
+test("harris female maintain with high activity = 2332.905", function () {
+    closeTo(
+        calc.calcTotalCalories(baseline({ gender: "female", formula: "harris", activity: 1.55 })),
+        2332.905
+    );
+});
+
+test("all extras combine: female mifflin = 2679.3", function () {
+    closeTo(
+        calc.calcTotalCalories(
+            baseline({ gender: "female", isPregnant: true, isBreastfeeding: true, isCycle: true })
+        ),
+        2679.3
+    );
+});
+
+test("pregnancy with lose20: female = 1663.44", function () {
+    closeTo(
+        calc.calcTotalCalories(baseline({ gender: "female", isPregnant: true, goal: "lose20" })),
+        1663.44
+    );
+});
+
+test("breastfeeding + cycle with lose20: female = 1903.44", function () {
+    closeTo(
+        calc.calcTotalCalories(
+            baseline({ gender: "female", isBreastfeeding: true, isCycle: true, goal: "lose20" })
+        ),
+        1903.44
+    );
+});
+
+test("muscleGain with harris and high activity: male = 3363.1704", function () {
+    closeTo(
+        calc.calcTotalCalories(baseline({ formula: "harris", activity: 1.725, goal: "muscleGain" })),
+        3363.1704
+    );
+});
+
 console.log("");
 console.log(passed + " passed, " + failed + " failed");
 if (failed > 0) process.exit(1);
