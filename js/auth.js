@@ -6,6 +6,7 @@ import { ADMIN_PIN } from "./config.js";
 
 const SUB_KEY = "aina_subscription";
 const CODES_KEY = "aina_access_codes"; // журнал сгенерированных кодов (только у админа)
+const TRIAL_KEY = "aina_trial_used";   // флаг: пробный период уже использован
 const ADMIN_SESSION = "aina_admin_session";
 const DAY_MS = 86400000;
 const SALT = "aina-evidence-2026";
@@ -23,6 +24,18 @@ function saveSub(s) { localStorage.setItem(SUB_KEY, JSON.stringify(s)); }
 const authListeners = new Set();
 function notifyAuth() { authListeners.forEach((fn) => fn()); }
 export function subscribeAuth(fn) { authListeners.add(fn); return () => authListeners.delete(fn); }
+
+// --- Пробный период (3 дня бесплатно, один раз) ---
+export function isTrialUsed() { return localStorage.getItem(TRIAL_KEY) === "1"; }
+export function startTrial() {
+  if (isTrialUsed()) return { ok: false, error: "Пробный период уже использован" };
+  const now = Date.now();
+  const until = now + 3 * DAY_MS;
+  saveSub({ until, trial: true });
+  localStorage.setItem(TRIAL_KEY, "1");
+  notifyAuth();
+  return { ok: true, until };
+}
 
 // --- Мягкая подпись кода (djb2-подобный хеш). Не криптостойко — см. README. ---
 function hashStr(s) {

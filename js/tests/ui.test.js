@@ -110,12 +110,15 @@ test("Пейволл рендерит подзаголовок и заголов
   assert.ok(/Персональный конструктор меню/i.test(html), "должен быть текст подзаголовка");
 });
 
-test("Пейволл рендерит ценовую плашку", () => {
+test("Пейволл рендерит тарифные планы", () => {
   const html = renderPaywallHTML();
-  assert.ok(hasClass(html, "pw-price"), "должна быть плашка .pw-price");
-  assert.ok(hasClass(html, "pw-amount"), "должна быть сумма .pw-amount");
-  assert.ok(hasClass(html, "pw-period"), "должен быть период .pw-period");
+  const plans = (html.match(/class=["'][^"']*pw-plan(?:\s|["'])/g) || []).length;
+  assert.ok(plans >= 3, `должно быть минимум 3 тарифа .pw-plan, найдено ${plans}`);
   assert.ok(/₽/.test(html), "должен быть символ рубля");
+  assert.ok(/990/.test(html), "должна быть цена месяца 990");
+  assert.ok(/2490/.test(html), "должна быть цена квартала 2490");
+  assert.ok(/7990/.test(html), "должна быть цена года 7990");
+  assert.ok(/3 дня бесплатно/.test(html), "должен быть пробный период 3 дня");
 });
 
 test("Пейволл рендерит шаги инструкции и форму ввода кода", () => {
@@ -178,11 +181,11 @@ test("Все элементы пейволла вложены в карточк�
   assert.ok(hasClass(html, "paywall"), "должна быть секция .paywall");
   // Бренд, цена, форма — все внутри карточки
   const brandIdx = html.indexOf('class="pw-brand"');
-  const priceIdx = html.indexOf('class="pw-price"');
+  const planIdx = html.indexOf('class="pw-plan');
   const formIdx = html.indexOf('id="pw_form"');
   const adminIdx = html.indexOf('id="pw_admin"');
   assert.ok(brandIdx > cardOpen, "бренд должен быть внутри .pw-card");
-  assert.ok(priceIdx > cardOpen, "цена должна быть внутри .pw-card");
+  assert.ok(planIdx > cardOpen, "тарифы должны быть внутри .pw-card");
   assert.ok(formIdx > cardOpen, "форма должна быть внутри .pw-card");
   assert.ok(adminIdx > cardOpen, "кнопка админа должна быть внутри .pw-card");
 });

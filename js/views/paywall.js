@@ -1,21 +1,38 @@
 // Экран оплаты/входа: показывается, пока нет активной подписки.
-import { activateCode, enterAdminMode } from "../auth.js";
-import { PAYMENT } from "../config.js";
+import { activateCode, enterAdminMode, startTrial, isTrialUsed } from "../auth.js";
+import { PAYMENT, PLANS, TRIAL_DAYS } from "../config.js";
 import { esc } from "../ui.js";
 
 export function renderPaywall(root) {
   const recip = PAYMENT.recipient ? `, ${esc(PAYMENT.recipient)}` : "";
+  const trialAvailable = !isTrialUsed();
+
   root.innerHTML = `
     <section class="paywall">
       <div class="pw-card">
-        <div class="pw-brand"><span class="mark">A</span> Aina <em>Évidence</em></div>
+        <div class="pw-brand"><span class="mark">A</span> Aina <em>évidence</em></div>
         <div class="pw-subtitle">Персональный конструктор меню</div>
         <h1 class="pw-title">Доступ к конструктору меню</h1>
         <p class="pw-sub">Персональное меню любой сложности: расчёт КБЖУ, меню по дням, замены продуктов, список покупок и экспорт в PDF.</p>
 
-        <div class="pw-price">
-          <span class="pw-amount">${esc(PAYMENT.price)} ₽</span>
-          <span class="pw-period">${esc(PAYMENT.period)}</span>
+        ${trialAvailable ? `
+          <div class="pw-trial">
+            <div class="pw-trial-badge">${TRIAL_DAYS} дня бесплатно</div>
+            <p class="pw-trial-text">Попробуйте все возможности конструктора без оплаты — полный доступ на ${TRIAL_DAYS} дня.</p>
+            <button id="pw_trial" class="btn primary pw-trial-btn" type="button">Начать пробный период</button>
+          </div>
+        ` : ""}
+
+        <div class="pw-plans-label">Тарифы</div>
+        <div class="pw-plans">
+          ${PLANS.map((p, i) => `
+            <div class="pw-plan ${i === 1 ? "pw-plan-popular" : ""}">
+              ${p.save ? `<div class="pw-plan-badge">${esc(p.save)}</div>` : ""}
+              <div class="pw-plan-name">${esc(p.label)}</div>
+              <div class="pw-plan-price">${esc(p.price)} ₽</div>
+              <div class="pw-plan-per">${esc(p.perMonth)}</div>
+            </div>
+          `).join("")}
         </div>
 
         <div class="pw-steps">
@@ -48,5 +65,18 @@ export function renderPaywall(root) {
     }
     // при успехе activateCode уже вызвал notifyAuth → приложение переключится на основной интерфейс
   };
+
+  const trialBtn = root.querySelector("#pw_trial");
+  if (trialBtn) {
+    trialBtn.onclick = () => {
+      const res = startTrial();
+      if (!res.ok) {
+        err.textContent = res.error;
+        err.hidden = false;
+      }
+      // при успехе startTrial вызвал notifyAuth → приложение откроется
+    };
+  }
+
   root.querySelector("#pw_admin").onclick = () => enterAdminMode();
 }
