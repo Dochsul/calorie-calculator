@@ -4,7 +4,7 @@ import { getState, update, targetCalories } from "../store.js";
 import { calcMacros } from "../calc.js";
 import { PRODUCT_MAP } from "../data.js";
 import { parseDiary, MIN_GRAMS, MAX_GRAMS } from "../parser.js";
-import { chartsHtml } from "../chart.js";
+import { chartsHtml } from "../chart.js?v=2";
 import { esc } from "../ui.js";
 
 function todayStr() {

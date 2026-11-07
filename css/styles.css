@@ -245,6 +245,31 @@ textarea { resize: vertical; }
 .rep-date { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--muted); }
 .rep-date input { width: auto; margin: 0; }
 
+/* — Плавный переход при смене темы — */
+body, .topbar, .card, .tab, .btn, input, select, textarea,
+.meal-slot, .dish-card, .shop-group, .tpl-row, .ing-row,
+.rep-header, .rep-meal-head, .rep-comp-head, .rep-dtotal,
+.rep-footer, .rep-table th, .chart-block {
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+}
+
+/* — SVG-графики: брендовые переменные вместо жёстких цветов — */
+.chart-svg .grid-line { stroke: var(--chart-grid); }
+.chart-svg .axis-label { fill: var(--chart-axis); }
+.chart-svg .bar-rect { fill: var(--chart-bar); }
+.chart-svg .bar-value { fill: var(--chart-text); }
+.chart-svg .goal-line { stroke: var(--chart-goal); }
+.chart-svg .goal-label { fill: var(--chart-goal); }
+.chart-svg .line-protein { stroke: var(--chart-protein); }
+.chart-svg .line-fat { stroke: var(--chart-fat); }
+.chart-svg .line-carb { stroke: var(--chart-carb); }
+.chart-svg .dot-protein { fill: var(--chart-protein); }
+.chart-svg .dot-fat { fill: var(--chart-fat); }
+.chart-svg .dot-carb { fill: var(--chart-carb); }
+.lg-sw.protein { background: var(--chart-protein); }
+.lg-sw.fat { background: var(--chart-fat); }
+.lg-sw.carb { background: var(--chart-carb); }
+
 /* — Графики динамики — */
 .charts { margin: 0 20px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .chart-block { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--card); }
