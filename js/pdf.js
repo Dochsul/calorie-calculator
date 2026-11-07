@@ -1,6 +1,6 @@
 // Экспорт меню в PDF через печать (Сохранить как PDF в браузере).
-// Макет: цветные шапки приёмов пищи, таблицы КБЖУ, итог за день,
-// сравнение с целью и мотивирующий подвал.
+// Премиальный клинический стиль Aina Évidence:
+// лесной зелёный #1f4d3f, охра #a9762f, тёплая слоновая кость #f6f2ea.
 import { getState, targetCalories } from "./store.js";
 import { calcMacros } from "./calc.js";
 import { PRODUCT_MAP } from "./data.js";
@@ -12,12 +12,13 @@ const GOALS = {
   muscleGain: "Набор мышечной массы",
 };
 
+// Брендовая палитра Aina Évidence для приёмов пищи — приглушённые клинические тона
 const MEAL_COLORS = {
-  "Завтрак": "#2e7d32",
-  "Обед": "#a83232",
-  "Ужин": "#2d5a88",
-  "Перекус": "#795548",
-  "Полдник": "#795548",
+  "Завтрак": "#a9762f",
+  "Обед": "#1f4d3f",
+  "Ужин": "#34556a",
+  "Перекус": "#7a5f7e",
+  "Полдник": "#7a5f7e",
 };
 
 function esc(s) {
@@ -40,20 +41,16 @@ function measureFor(id, grams) {
 
 function ingNutri(pid, g) {
   const p = PRODUCT_MAP[pid];
+  const safeG = Number.isFinite(g) && g > 0 ? g : 0;
   if (!p) return { kcal: 0, p: 0, f: 0, c: 0, cooked: 0, raw: 0 };
   return {
-    kcal: (p.kcal * g) / 100,
-    p: (p.p * g) / 100,
-    f: (p.f * g) / 100,
-    c: (p.c * g) / 100,
-    cooked: g * p.yield,
-    raw: g,
+    kcal: (p.kcal * safeG) / 100,
+    p: (p.p * safeG) / 100,
+    f: (p.f * safeG) / 100,
+    c: (p.c * safeG) / 100,
+    cooked: safeG * p.yield,
+    raw: safeG,
   };
-}
-
-function mealName(meal, dishes) {
-  const dish = dishes.find((d) => d.id === meal.dishId);
-  return dish ? dish.category || "Приём пищи" : "Приём пищи";
 }
 
 function shoppingFromState(state) {
@@ -82,28 +79,27 @@ function buildPrintHtml(state) {
   const client = state.client;
   const name = (client.name || "Клиент").trim();
   const weight = client.weight || "—";
+  const height = client.height || "—";
   const goalLabel = GOALS[client.goal] || "Поддержание веса";
   const dayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
 
-  // — Шапка —
-  const headerBanner = `<div class="pdf-banner pdf-banner-head">
-    🌸 ПЛАН ПИТАНИЯ ${esc(name.toUpperCase())} • ВЕС ${weight} КГ 🏆 • ~${cal.toLocaleString("ru-RU")} ккал
+  // — Шапка (премиальный клинический стиль) —
+  const headerBanner = `<div class="pdf-head">
+    <div class="pdf-head-brand">Aina <em>Évidence</em></div>
+    <div class="pdf-head-info">
+      <div class="pdf-head-title">Персональный план питания</div>
+      <div class="pdf-head-client">${esc(name)} · ${weight} кг · ${height} см</div>
+    </div>
+    <div class="pdf-head-goal">
+      <span class="pdf-head-cal">${cal.toLocaleString("ru-RU")}</span> ккал<br>
+      <span class="pdf-head-goallabel">${esc(goalLabel)}</span>
+    </div>
   </div>`;
 
   // — Фокус —
-  const focusNote = client.notes ? esc(client.notes) : "Много белка + кардио + планка!";
-  const focusBanner = `<div class="pdf-banner pdf-banner-focus">
-    🎯 Фокус: ${esc(goalLabel.toUpperCase())} • ${focusNote}
-  </div>`;
-
-  // — Прогресс —
-  const progressBanner = `<div class="pdf-banner pdf-banner-progress">
-    ${esc(name)} | ${weight} кг · Цель: ${esc(goalLabel)} · БЖУ 30/30/40 🏃‍♂️ Продолжаем!
-  </div>`;
-
-  // — Мотивация —
-  const successBanner = `<div class="pdf-banner pdf-banner-success">
-    🏆 МОЛОДЕЦ, ${esc(name.toUpperCase())}! Следите за порциями и интервалами 2–3 часа. Так держать! 😋
+  const focusNote = client.notes ? esc(client.notes) : "Соблюдайте интервалы 2–3 часа и питьевой режим";
+  const focusBanner = `<div class="pdf-focus">
+    <span class="pdf-focus-label">Фокус периода:</span> ${esc(goalLabel)} · ${focusNote}
   </div>`;
 
   // — Дни с таблицами —
@@ -136,7 +132,6 @@ function buildPrintHtml(state) {
       dKcal += mKcal; dP += mP; dF += mF; dC += mC; dCooked += mCooked; dRaw += mRaw;
       const mealTitle = dish.category || "Приём пищи";
       const color = MEAL_COLORS[mealTitle] || "#1f4d3f";
-      const sub = `#${color.replace("#", "")}`;
       mealsHtml += `
         <div class="pdf-meal">
           <div class="pdf-mhead" style="background:${color}">${esc(mealTitle.toUpperCase())} — ${esc(dish.name)}</div>
@@ -148,7 +143,7 @@ function buildPrintHtml(state) {
             </tr></thead>
             <tbody>
               ${rows}
-              <tr class="pdf-subtotal" style="background:${color}22">
+              <tr class="pdf-subtotal" style="background:${color}1a">
                 <td class="t-left"><b>ИТОГО ➔ ${esc(mealTitle.toUpperCase())}</b></td>
                 <td>${Math.round(mRaw)}</td><td>${Math.round(mCooked)}</td>
                 <td><b>${Math.round(mCooked)} г</b></td><td>г/мл</td>
@@ -162,7 +157,7 @@ function buildPrintHtml(state) {
     // — Итог за день —
     const dailyTotal = `<div class="pdf-day-total">
       <table class="pdf-tbl"><tbody><tr class="pdf-dtotal">
-        <td class="t-left"><b>✅ ИТОГО ЗА ДЕНЬ</b></td>
+        <td class="t-left"><b>ИТОГО ЗА ДЕНЬ</b></td>
         <td>${Math.round(dRaw)}</td><td>${Math.round(dCooked)}</td>
         <td><b>${Math.round(dCooked)} г</b></td><td>—</td>
         <td><b>${r1(dKcal)}</b></td><td><b>${r1(dP)}</b></td><td><b>${r1(dF)}</b></td><td><b>${r1(dC)}</b></td>
@@ -173,7 +168,7 @@ function buildPrintHtml(state) {
     const diff = (fact, tgt) => r1(fact - tgt);
     const pct = (grams, kcal) => (kcal > 0 ? Math.round((grams / kcal) * 100) : 0);
     const comparison = `<div class="pdf-comp">
-      <div class="pdf-comp-head">📊 СРАВНЕНИЕ С ЦЕЛЬЮ</div>
+      <div class="pdf-comp-head">Сравнение с целью</div>
       <table class="pdf-tbl">
         <thead><tr>
           <th class="t-left"></th><th>Ккал</th><th>Белки (г)</th><th>Жиры (г)</th><th>Углеводы (г)</th>
@@ -217,58 +212,101 @@ function buildPrintHtml(state) {
 
   // — Подвал —
   const footer = `<div class="pdf-footer">
-    🌸 Держитесь, ${esc(name)}! Пейте 2 литра воды, гуляйте 10 000 шагов и не забывайте про планку 30 сек × 3–5 раз. 🧘‍♀️ БЖУ 30/30/40 — идеально для достижения цели. 💪🌸
+    <span class="pdf-footer-brand">Aina <em>Évidence</em></span>
+    <span class="pdf-footer-note">Соблюдайте питьевой режим 2 л, интервалы 2–3 часа. БЖУ 30/30/40.</span>
   </div>`;
 
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8">
   <title>План питания Aina Évidence — ${esc(name)}</title>
   <style>
-    @page { margin: 12mm; }
+    @page { margin: 14mm; }
     * { box-sizing: border-box; }
-    body { font: 11px/1.45 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color:#1c2620; margin:0; }
-    h2 { font-size: 13px; margin: 14px 0 6px; font-family: Georgia, serif; color:#1f4d3f; }
+    body { font: 11px/1.5 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color:#1c2620; margin:0; }
+    em { font-style: italic; }
 
-    .pdf-banner { color:#fff; padding:8px 14px; border-radius:8px; margin:6px 0; font-weight:600; }
-    .pdf-banner-head { background:#7e3c8d; font-size:14px; }
-    .pdf-banner-focus { background:#a83232; }
-    .pdf-banner-progress { background:#2e7d32; }
-    .pdf-banner-success { background:#388e3c; }
+    /* — Шапка — */
+    .pdf-head {
+      background: #1f4d3f; color: #fff; border-radius: 10px;
+      padding: 18px 22px; display: flex; align-items: center; gap: 20px;
+    }
+    .pdf-head-brand {
+      font-family: Georgia, serif; font-size: 22px; font-weight: 400;
+      letter-spacing: .5px; white-space: nowrap; border-right: 1px solid rgba(255,255,255,.2);
+      padding-right: 20px;
+    }
+    .pdf-head-brand em { color: #c8954a; font-weight: 400; }
+    .pdf-head-info { flex: 1; }
+    .pdf-head-title {
+      font-family: Georgia, serif; font-size: 14px; opacity: .8;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+    }
+    .pdf-head-client { font-size: 13px; font-weight: 600; }
+    .pdf-head-goal { text-align: right; font-size: 12px; line-height: 1.6; opacity: .85; }
+    .pdf-head-cal { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: #c8954a; }
+    .pdf-head-goallabel { font-size: 11px; }
 
-    .pdf-day { page-break-inside: avoid; margin-bottom: 14px; }
-    .pdf-day-title { border-bottom: 1px solid #ccc; padding-bottom: 3px; }
-    .pdf-meal { margin: 8px 0; }
-    .pdf-mhead { color:#fff; font-weight:700; font-size:11px; letter-spacing:.6px;
-      padding:6px 12px; border-radius:8px 8px 0 0; text-transform:uppercase; }
+    /* — Фокус — */
+    .pdf-focus {
+      background: #f6f2ea; border-left: 4px solid #a9762f; border-radius: 0 8px 8px 0;
+      padding: 10px 16px; margin: 12px 0; font-size: 12px; color: #1c2620;
+    }
+    .pdf-focus-label { font-weight: 700; color: #a9762f; }
 
+    h2 { font-size: 14px; margin: 16px 0 8px; font-family: Georgia, serif; color:#1f4d3f; }
+    .pdf-day { page-break-inside: avoid; margin-bottom: 16px; }
+    .pdf-day-title { border-bottom: 2px solid #e6dfd2; padding-bottom: 4px; }
+
+    /* — Приём пищи — */
+    .pdf-meal { margin: 10px 0; page-break-inside: avoid; }
+    .pdf-mhead {
+      color:#fff; font-weight:700; font-size:11px; letter-spacing:.6px;
+      padding:7px 14px; border-radius:8px 8px 0 0; text-transform:uppercase;
+    }
+
+    /* — Таблицы — */
     .pdf-tbl { width:100%; border-collapse:collapse; }
-    .pdf-tbl th, .pdf-tbl td { border:1px solid #d9d2c4; padding:4px 6px; text-align:center; }
-    .pdf-tbl th { background:#f7f3ea; font-size:10px; color:#6f7d72; font-weight:600; }
+    .pdf-tbl th, .pdf-tbl td { border:1px solid #e6dfd2; padding:5px 7px; text-align:center; }
+    .pdf-tbl th { background:#f7f3ea; font-size:10px; color:#6f7d72; font-weight:600; text-transform: uppercase; letter-spacing: .3px; }
     .pdf-tbl .t-left { text-align:left; }
     .pdf-subtotal td { font-size:11px; }
 
-    .pdf-day-total { margin: 10px 0; }
-    .pdf-dtotal { background:#333; color:#fff; font-weight:700; }
-    .pdf-dtotal td { border-color:#333; }
+    /* — Итог за день — */
+    .pdf-day-total { margin: 12px 0; }
+    .pdf-dtotal { background:#1f4d3f; color:#fff; font-weight:700; }
+    .pdf-dtotal td { border-color:#1f4d3f; }
 
-    .pdf-comp { margin: 8px 0 12px; }
-    .pdf-comp-head { background:#455a64; color:#fff; font-weight:700; font-size:11px;
-      padding:6px 12px; border-radius:8px 8px 0 0; letter-spacing:.6px; text-transform:uppercase; }
-    .pdf-cmp-row td { background:#37474f; color:#fff; }
-    .pdf-cmp-row2 td { background:#5e35b1; color:#fff; }
-    .pdf-cmp-diff td { background:#f7f1e6; font-weight:700; }
+    /* — Сравнение с целью — */
+    .pdf-comp { margin: 10px 0 14px; page-break-inside: avoid; }
+    .pdf-comp-head {
+      background:#a9762f; color:#fff; font-weight:700; font-size:11px;
+      padding:7px 14px; border-radius:8px 8px 0 0; letter-spacing:.6px; text-transform:uppercase;
+      font-family: Georgia, serif;
+    }
+    .pdf-cmp-row td { background:#1f4d3f; color:#fff; }
+    .pdf-cmp-row2 td { background:#34556a; color:#fff; }
+    .pdf-cmp-diff td { background:#f7f1e6; font-weight:700; color:#1c2620; }
 
-    .pdf-footer { background:#f6f2ea; color:#1c2620; padding:10px 14px; border-radius:8px; margin-top:10px; font-size:11px; line-height:1.5; }
+    /* — Подвал — */
+    .pdf-footer {
+      background:#f6f2ea; border-top: 2px solid #1f4d3f; color:#1c2620;
+      padding:12px 16px; border-radius:0 0 8px 8px; margin-top:14px;
+      font-size:11px; line-height:1.5; display: flex; align-items: center; gap: 16px;
+    }
+    .pdf-footer-brand {
+      font-family: Georgia, serif; font-size: 14px; white-space: nowrap;
+    }
+    .pdf-footer-brand em { color: #a9762f; }
+    .pdf-footer-note { opacity: .7; }
 
-    .pdf-shop { margin-top: 16px; }
-    .pdf-shop-grp { margin-bottom:8px; break-inside: avoid; }
-    .pdf-shop-grp b { color:#1f4d3f; }
-    .pdf-shop-grp ul { column-count: 2; list-style:none; padding:0; margin:4px 0 0; }
-    .pdf-shop-grp li { padding:2px 0; }
+    /* — Список покупок — */
+    .pdf-shop { margin-top: 18px; page-break-inside: avoid; }
+    .pdf-shop-grp { margin-bottom:10px; break-inside: avoid; }
+    .pdf-shop-grp b { color:#1f4d3f; font-family: Georgia, serif; font-size: 12px; }
+    .pdf-shop-grp ul { column-count: 2; list-style:none; padding:0; margin:6px 0 0; }
+    .pdf-shop-grp li { padding:2px 0; border-bottom: 1px dotted #e6dfd2; }
   </style></head><body>
   ${headerBanner}
   ${focusBanner}
-  ${progressBanner}
-  ${successBanner}
   ${daysHtml}
   ${shopHtml}
   ${footer}

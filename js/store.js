@@ -134,11 +134,7 @@ function load() {
         while (d.meals.length < n) d.meals.push({ dishId: null, servings: 1 });
         while (d.meals.length > n) d.meals.pop();
       });
-      return merged;lsPerDay;
-      state.menu.days.forEach((d) => {
-        while (d.meals.length < n) d.meals.push({ dishId: null, servings: 1 });
-        while (d.meals.length > n) d.meals.pop();
-      });
+      return merged;
     }
   } catch (e) {
     console.warn("aina: не удалось загрузить состояние", e);
