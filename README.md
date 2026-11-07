@@ -85,6 +85,30 @@ python3 -m http.server 3000 --directory .
 
 Then open <http://localhost:3000>.
 
+## Tests
+
+The unit tests use Node's built-in test runner — no test framework or extra dependencies to
+install. You only need **Node.js 18+** (the `node --test` runner is built in).
+
+```bash
+# run every unit test (tests/*.test.js)
+node --test
+
+# run a single suite
+node --test tests/input.test.js
+node --test tests/parser.test.js
+node --test tests/pdf.test.js
+```
+
+Or via the npm script:
+
+```bash
+npm test
+```
+
+A green run reports `# pass 44 / # fail 0`. There is no `package-lock.json` and nothing to
+`npm install` first — `npm test` works on a fresh clone.
+
 ## Publishing
 
 `index.html` is the entire app: no build, no environment variables, no server-side code. Any
