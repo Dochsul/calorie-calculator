@@ -71,7 +71,7 @@ function shoppingFromState(state) {
     .filter((x) => x.prod);
 }
 
-function buildPrintHtml(state) {
+export function buildPrintHtml(state) {
   const cal = targetCalories();
   const macros = calcMacros(cal);
   const days = state.menu.days;
