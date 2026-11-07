@@ -3,7 +3,7 @@
 import { getState, update, targetCalories } from "../store.js";
 import { calcMacros } from "../calc.js";
 import { PRODUCT_MAP } from "../data.js";
-import { parseDiary } from "../parser.js";
+import { parseDiary, MIN_GRAMS, MAX_GRAMS } from "../parser.js";
 import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
 
@@ -45,14 +45,16 @@ function measureFor(id, grams) {
 
 function ingNutri(pid, g) {
   const p = PRODUCT_MAP[pid];
+  // отрицательный или нечисловой вес обнуляется — калорийность не может быть отрицательной
+  const safeG = Number.isFinite(g) && g > 0 ? g : 0;
   if (!p) return { kcal: 0, p: 0, f: 0, c: 0, cooked: 0, raw: 0 };
   return {
-    kcal: (p.kcal * g) / 100,
-    p: (p.p * g) / 100,
-    f: (p.f * g) / 100,
-    c: (p.c * g) / 100,
-    cooked: g * p.yield,
-    raw: g,
+    kcal: (p.kcal * safeG) / 100,
+    p: (p.p * safeG) / 100,
+    f: (p.f * safeG) / 100,
+    c: (p.c * safeG) / 100,
+    cooked: safeG * p.yield,
+    raw: safeG,
   };
 }
 
@@ -117,7 +119,7 @@ function renderTables(s) {
       const pr = PRODUCT_MAP[ing.productId];
       return `<tr>
         <td class="t-left">${pr ? esc(pr.name) : "—"}</td>
-        <td><input type="number" min="1" class="dg" value="${ing.grams}" data-mi="${mi}" data-ii="${ii}"></td>
+        <td><input type="number" min="${MIN_GRAMS}" max="${MAX_GRAMS}" class="dg" value="${ing.grams}" data-mi="${mi}" data-ii="${ii}"></td>
         <td>${r1(n.cooked)}</td>
         <td></td>
         <td>${measureFor(ing.productId, parseFloat(ing.grams) || 0)}</td>
@@ -179,10 +181,14 @@ function bindTables(root) {
     inp.onchange = (e) => {
       const mi = +e.target.dataset.mi, ii = +e.target.dataset.ii;
       let v = parseFloat(e.target.value);
-      if (!Number.isFinite(v) || v <= 0) {
-        // запрет отрицательных и нулевых значений веса
-        e.target.value = "1";
-        v = 1;
+      if (!Number.isFinite(v) || v < MIN_GRAMS) {
+        // запрет отрицательных, нулевых и нечисловых значений веса
+        e.target.value = String(MIN_GRAMS);
+        v = MIN_GRAMS;
+      } else if (v > MAX_GRAMS) {
+        // ограничение сверху — защита от абсурдных значений веса
+        e.target.value = String(MAX_GRAMS);
+        v = MAX_GRAMS;
       }
       update((s) => (s.diary.meals[mi].ingredients[ii].grams = v));
       renderReport(root);

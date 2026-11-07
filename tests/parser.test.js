@@ -3,7 +3,7 @@
 // некорректных (отрицательных, нулевых, NaN) значений веса.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDiary, parsePhrase, validGrams } from "../js/parser.js";
+import { parseDiary, parsePhrase, validGrams, validKcal, validIngredient, MIN_GRAMS, MAX_GRAMS } from "../js/parser.js";
 
 // ---------- validGrams: базовая валидация веса ----------
 test("validGrams пропускает положительные числа", () => {
@@ -153,4 +153,59 @@ test("parseDiary без маркеров приёмов группирует в 
   for (const ing of meals[0].ingredients) {
     assert.ok(ing.grams > 0);
   }
+});
+
+// ---------- Дополнительные проверки: калорийность и границы веса ----------
+
+test("validKcal пропускает неотрицательные числа", () => {
+  assert.equal(validKcal(0), 0);
+  assert.equal(validKcal(150), 150);
+  assert.equal(validKcal(0.5), 0.5);
+});
+
+test("validKcal отклоняет отрицательные и некорректные значения", () => {
+  assert.equal(validKcal(-1), null);
+  assert.equal(validKcal(-0.01), null);
+  assert.equal(validKcal(NaN), null);
+  assert.equal(validKcal(Infinity), null);
+  assert.equal(validKcal("100"), null);
+  assert.equal(validKcal(undefined), null);
+});
+
+test("validIngredient отклоняет отрицательный и нулевой вес", () => {
+  assert.equal(validIngredient({ productId: "chicken_breast", grams: -50 }), false);
+  assert.equal(validIngredient({ productId: "chicken_breast", grams: 0 }), false);
+  assert.equal(validIngredient({ productId: "chicken_breast", grams: NaN }), false);
+});
+
+test("validIngredient отклоняет неизвестный продукт", () => {
+  assert.equal(validIngredient({ productId: "no_such_product", grams: 100 }), false);
+  assert.equal(validIngredient({ productId: undefined, grams: 100 }), false);
+});
+
+test("validIngredient принимает корректный ингредиент", () => {
+  assert.equal(validIngredient({ productId: "chicken_breast", grams: 150 }), true);
+  assert.equal(validIngredient({ productId: "egg", grams: 50 }), true);
+});
+
+test("parsePhrase ограничивает вес сверху разумным максимумом", () => {
+  const ings = parsePhrase("куриная грудка 99999 г");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "chicken_breast");
+  assert.ok(ings[0].grams <= MAX_GRAMS, `вес ${ings[0].grams} превышает максимум ${MAX_GRAMS}`);
+  assert.ok(ings[0].grams >= MIN_GRAMS);
+});
+
+test("parsePhrase ограничивает вес по штучной мере сверху", () => {
+  const ings = parsePhrase("5000 яйца");
+  assert.equal(ings.length, 1);
+  assert.ok(ings[0].grams <= MAX_GRAMS, `вес ${ings[0].grams} превышает максимум`);
+});
+
+test("parseDiary не пропускает ингредиенты с весом выше максимума как есть", () => {
+  const meals = parseDiary("Обед: куриная грудка 50000 г, гречка");
+  const breast = meals.flatMap((m) => m.ingredients).find((i) => i.productId === "chicken_breast");
+  assert.ok(breast, "куриная грудка должна распознаться");
+  assert.ok(breast.grams <= MAX_GRAMS, "вес должен быть ограничен сверху");
+  assert.ok(breast.grams > 0);
 });

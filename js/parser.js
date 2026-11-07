@@ -139,8 +139,27 @@ function scanQuantities(norm) {
   return res;
 }
 
+// Допустимый диапазон веса одного ингредиента (граммы).
+export const MIN_GRAMS = 1;
+export const MAX_GRAMS = 2000;
+
 // Валидация: только положительные конечные значения веса (>=1 г).
 export const validGrams = (g) => (Number.isFinite(g) && g > 0 ? g : null);
+// Валидация калорийности продукта: конечное неотрицательное число.
+export const validKcal = (k) => (Number.isFinite(k) && k >= 0 ? k : null);
+
+// Ограничиваем вес разумным диапазоном, чтобы исключить абсурдные значения
+// (например, «99999 г»), которые дали бы невозможную калорийность.
+const clampGrams = (g) => Math.min(MAX_GRAMS, Math.max(MIN_GRAMS, Math.round(g * 10) / 10));
+
+// Комплексная проверка ингредиента: корректный вес и корректные данные
+// калорийности продукта — иначе ингредиент нельзя использовать.
+export function validIngredient(ing) {
+  if (!ing || validGrams(ing.grams) == null) return false;
+  const p = PRODUCT_MAP[ing.productId];
+  if (!p || validKcal(p.kcal) == null) return false;
+  return true;
+}
 
 function resolveGrams(alias, q) {
   if (!q) return alias.grams;
@@ -155,7 +174,7 @@ function resolveGrams(alias, q) {
   else if (q.kind === "piece") v = q.n * alias.grams;
   else if (q.kind === "bare") v = q.n * (alias.perUnit || alias.grams);
   else v = alias.grams;
-  return validGrams(v) != null ? Math.max(1, Math.round(v * 10) / 10) : alias.grams;
+  return validGrams(v) != null ? clampGrams(v) : alias.grams;
 }
 
 export function parsePhrase(phrase) {
@@ -183,7 +202,9 @@ export function parsePhrase(phrase) {
     if (!PRODUCT_MAP[m.alias.id]) return;
     const g = gramsByIdx[i] != null ? gramsByIdx[i] : m.alias.grams;
     if (validGrams(g) == null) return; // пропускаем некорректные/отрицательные значения
-    result.push({ productId: m.alias.id, grams: g });
+    const ing = { productId: m.alias.id, grams: clampGrams(g) };
+    if (!validIngredient(ing)) return; // пропускаем продукты с некорректной калорийностью
+    result.push(ing);
   });
   return result;
 }
