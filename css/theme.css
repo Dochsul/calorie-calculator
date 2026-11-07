@@ -96,3 +96,22 @@
   --chart-fat: #d8a85a;        /* жиры — янтарная охра (отлична от цели) */
   --chart-carb: #b08d4e;       /* углеводы — приглушённая охра (брендовая) */
 }
+
+/* — Адаптивное сужение таблиц отчёта (Дневник) для мобильных —
+   Колонки сжимаются (меньший шрифт/отступы, узкое поле веса, перенос
+   названия продукта), чтобы 9–10-колоночная таблица помещалась в экран
+   без горизонтального скролла. Селекторы с .rep-card выше специфичностью
+   базовых правил в styles.css, поэтому перекрывают их надёжно. */
+@media (max-width: 600px) {
+  .rep-card .rep-table { font-size: 10px; table-layout: fixed; width: 100%; }
+  .rep-card .rep-table th,
+  .rep-card .rep-table td { padding: 4px 3px; }
+  .rep-card .rep-table th { font-size: 9px; letter-spacing: 0; white-space: normal; }
+  .rep-card .rep-table th.t-left { width: 27%; }
+  .rep-card .rep-table .t-left { word-break: break-word; }
+  .rep-card .rep-table .dg { width: 100%; box-sizing: border-box; padding: 3px 4px; font-size: 10px; }
+  .rep-card .rep-input { padding: 14px 12px; }
+  .rep-card .rep-meal,
+  .rep-card .rep-day-total,
+  .rep-card .rep-comp { margin-left: 10px; margin-right: 10px; }
+}
