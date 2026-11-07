@@ -1,10 +1,10 @@
 // SVG-графики динамики по дням (без внешних зависимостей).
 // history: [{ date, kcal, p, f, c }], goalKcal: число, goalMacros: {proteins, fats, carbs}
 
-const W = 600;
-const PL = 40, PR = 12, PT = 16, PB = 28;
+const W = 600, H = 180;
+const PL = 40, PR = 12, PT = 14, PB = 24;
 function area() {
-  return { x0: PL, y0: PT, x1: W - PR, y1: 200 - PB, w: W - PL - PR, h: 200 - PT - PB };
+  return { x0: PL, y0: PT, x1: W - PR, y1: H - PB, w: W - PL - PR, h: H - PT - PB };
 }
 
 function shortDate(d) {
@@ -16,7 +16,7 @@ function shortDate(d) {
 function svgWrap(title, inner) {
   return `<div class="chart-block">
     <div class="chart-title">${title}</div>
-    <svg viewBox="0 0 600 200" class="chart-svg" preserveAspectRatio="xMidYMid meet">${inner}</svg>
+    <svg viewBox="0 0 600 ${H}" class="chart-svg" preserveAspectRatio="xMidYMid meet">${inner}</svg>
   </div>`;
 }
 
@@ -77,9 +77,9 @@ export function macroChart(history, goalMacros) {
   }
   history.forEach((h, i) => (g += `<text x="${x(i)}" y="${a.y1 + 16}" text-anchor="middle" font-size="9" fill="#5c6b7a">${shortDate(h.date)}</text>`));
   const legend = `<div class="chart-legend">
-    <span style="color:#2faa6a">● Белки</span>
-    <span style="color:#e0a93b">● Жиры</span>
-    <span style="color:#2f80ed">● Углеводы</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#2faa6a"></i>Белки</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#e0a93b"></i>Жиры</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#2f80ed"></i>Углеводы</span>
     <span class="hint">пунктир — цель</span>
   </div>`;
   return svgWrap("БЖУ по дням, г", g) + legend;
