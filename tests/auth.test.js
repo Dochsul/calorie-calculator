@@ -168,3 +168,159 @@ test("Неверный код не открывает доступ, валидн
   assert.equal(activateCode(makeCode(30)).ok, true);
   assert.equal(isActive(), true, "валидный код должен открывать доступ");
 });
+
+// ========== Подделка срока в коде: смена дней без обновления контрольной суммы ==========
+test("validateCode отклоняет код с подменённым сроком (30→365 дней)", () => {
+  const code = makeCode(30);               // AINA-30D-TOKEN-CSUM
+  const fake = code.replace("AINA-30D-", "AINA-365D-"); // меняем срок, CSUM остаётся от 30
+  assert.notEqual(fake, code);
+  const r = validateCode(fake);
+  assert.equal(r.ok, false, "подмена срока без обновления контрольной суммы должна блокироваться");
+  if (!r.ok) assert.ok(r.error);
+});
+
+test("activateCode с подменённым сроком не активирует подписку", () => {
+  localStorage.clear();
+  const code = makeCode(30);
+  const fake = code.replace("AINA-30D-", "AINA-365D-");
+  const r = activateCode(fake);
+  assert.equal(r.ok, false);
+  assert.equal(isActive(), false, "подделка срока не должна открывать доступ");
+});
+
+// ========== Недопустимые символы в токене ==========
+test("validateCode отклоняет код с символами вне алфавита (0, O, 1, I)", () => {
+  // Алфавит ALPH исключает 0/O/1/I — код с такими символами не валиден
+  assert.equal(validateCode("AINA-30D-0O1IAB-XXXX").ok, false);
+  assert.equal(validateCode("AINA-30D-ABCDEF-1234").ok, false); // цифры в токене не входят в ALPH
+});
+
+test("validateCode отклоняет код со строчными буквами в токене (до нормализации)", () => {
+  // Строчные буквы нормализуются toUpperCase, но "l" не в ALPH (исключены I/L? — нет, L есть)
+  // Проверяем реально недопустимый символ — строчная "o" → "O" нет в ALPH
+  const r = validateCode("AINA-30D-ABCDEO-XXXX");
+  assert.equal(r.ok, false);
+});
+
+// ========== Неверный формат: лишние/недостающие сегменты ==========
+test("validateCode отклоняет код с лишним сегментом", () => {
+  const code = makeCode(30);
+  const extra = code + "-EXTRA";
+  assert.equal(validateCode(extra).ok, false);
+});
+
+test("validateCode отклоняет код с недостающим сегментом", () => {
+  const code = makeCode(30);
+  // Убираем контрольную сумму
+  const missing = code.slice(0, code.lastIndexOf("-"));
+  assert.equal(validateCode(missing).ok, false);
+});
+
+test("validateCode отклоняет код с двойными дефисами", () => {
+  const code = makeCode(30);
+  const doubled = code.replace("-", "--", 1);
+  assert.equal(validateCode(doubled).ok, false);
+});
+
+// ========== Несколько неверных попыток подряд не активируют подписку ==========
+test("Серия неверных кодов не открывает доступ", () => {
+  localStorage.clear();
+  const badCodes = [
+    "AINA-30D-AAAAAA-ZZZZ",           // поддельная контрольная сумма
+    "НЕВЕРНЫЙ-КОД",                     // совсем другой формат
+    "AINA-30D-ABCDEFO-XXXX",           // недопустимый символ O
+    "AINA-0D-AAAAAA-XXXX",             // нулевой срок
+    "",                                 // пустой код
+    "AINA-30D-AB-XXXX",                 // короткий токен
+    "AINA-30D-ABCDEFGH-XXXX",           // длинный токен
+  ];
+  for (const bad of badCodes) {
+    const r = activateCode(bad);
+    assert.equal(r.ok, false, `код «${bad}» не должен активировать подписку`);
+    assert.equal(isActive(), false, `после кода «${bad}» доступ должен быть закрыт`);
+  }
+});
+
+// ========== Повторная активация после истечения: новый срок от сейчас ==========
+test("Повторная активация после истечения начинает срок заново, а не от старой даты", () => {
+  localStorage.clear();
+  // Активируем на 30 дней
+  activateCode(makeCode(30));
+  const firstUntil = getSubscription().until;
+
+  // Симулируем истечение — записываем прошедшую дату
+  const expiredAt = Date.now() - 10 * DAY_MS;
+  localStorage.setItem("aina_subscription", JSON.stringify({ until: expiredAt }));
+  assert.equal(isActive(), false, "просроченная подписка должна блокировать доступ");
+
+  // Активируем новый код на 30 дней — срок должен начаться от сейчас, а не от expiredAt
+  const r = activateCode(makeCode(30));
+  assert.equal(r.ok, true);
+  const newUntil = getSubscription().until;
+  const expectedMin = Date.now();
+  const expectedMax = Date.now() + 31 * DAY_MS;
+  assert.ok(newUntil > expiredAt + 30 * DAY_MS, "новый срок не должен отсчитываться от истёкшей даты");
+  assert.ok(newUntil >= expectedMin && newUntil <= expectedMax, "новый срок должен начинаться от текущего момента");
+});
+
+// ========== Граничный случай: подписка истекает ровно сейчас ==========
+test("isActive возвращает false, когда until равно текущему моменту", () => {
+  localStorage.clear();
+  localStorage.setItem("aina_subscription", JSON.stringify({ until: Date.now() }));
+  assert.equal(isActive(), false, "until = now уже считается истёкшей (строгое сравнение >)");
+});
+
+// ========== Повреждённый localStorage не открывает доступ ==========
+test("isActive возвращает false при повреждённой записи подписки", () => {
+  localStorage.clear();
+  localStorage.setItem("aina_subscription", "это не JSON");
+  assert.equal(isActive(), false, "повреждённая запись не должна открывать доступ");
+});
+
+test("isActive возвращает false при отсутствии поля until", () => {
+  localStorage.clear();
+  localStorage.setItem("aina_subscription", JSON.stringify({ foo: "bar" }));
+  assert.equal(isActive(), false);
+});
+
+test("isActive возвращает false при строковом until (не число)", () => {
+  localStorage.clear();
+  localStorage.setItem("aina_subscription", JSON.stringify({ until: "не-число" }));
+  assert.equal(isActive(), false);
+});
+
+// ========== Полный сценарий блокировки: истёкшая подписка → доступ закрыт ==========
+test("Истёкшая подписка полностью блокирует доступ к конструктору", () => {
+  localStorage.clear();
+  // Активируем на 30 дней
+  assert.equal(activateCode(makeCode(30)).ok, true);
+  assert.equal(isActive(), true, "подписка активна");
+
+  // Симулируем истечение
+  localStorage.setItem("aina_subscription", JSON.stringify({ until: Date.now() - 1 }));
+  assert.equal(isActive(), false, "после истечения доступ должен быть закрыт");
+
+  // Валидный код снова открывает
+  assert.equal(activateCode(makeCode(30)).ok, true);
+  assert.equal(isActive(), true, "новый валидный код должен снова открыть доступ");
+});
+
+// ========== Сет кодов с разными сроками: все валидны ==========
+test("Коды на разные сроки (1, 7, 30, 90, 365 дней) все проходят валидацию", () => {
+  for (const days of [1, 7, 30, 90, 365]) {
+    const r = validateCode(makeCode(days));
+    assert.equal(r.ok, true, `код на ${days} дней должен быть валиден`);
+    assert.equal(r.days, days);
+  }
+});
+
+// ========== activateCode: валидный код после серии неудач работает ==========
+test("Валидный код активирует подписку после серии неудачных попыток", () => {
+  localStorage.clear();
+  activateCode("AINA-30D-AAAAAA-ZZZZ");
+  activateCode("неверный");
+  activateCode("");
+  assert.equal(isActive(), false);
+  assert.equal(activateCode(makeCode(30)).ok, true);
+  assert.equal(isActive(), true, "валидный код должен работать после неудачных попыток");
+});
