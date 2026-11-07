@@ -5,11 +5,13 @@ import { renderMenu } from "./views/menu.js";
 import { renderDishes } from "./views/dishes.js";
 import { renderTemplates } from "./views/templates.js";
 import { renderShopping } from "./views/shopping.js";
+import { renderReport } from "./views/report.js";
 
 const TABS = [
   { id: "client", label: "Анкета", render: renderClient },
   { id: "menu", label: "Меню", render: renderMenu },
   { id: "dishes", label: "Блюда", render: renderDishes },
+  { id: "report", label: "Дневник", render: renderReport },
   { id: "templates", label: "Шаблоны", render: renderTemplates },
   { id: "shopping", label: "Покупки", render: renderShopping },
 ];

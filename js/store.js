@@ -94,6 +94,13 @@ export function defaultState() {
     dishes: defaultDishes(),
     menu: { days: [{ meals: Array.from({ length: 4 }, () => ({ dishId: null, servings: 1 })) }] },
     templates: { dishes: [], menus: [] },
+    diary: {
+      text: "Завтрак яйца жареные на слив масле. Огурец помидор хлеб\n" +
+            "Обед макароны с куриной грудкой. Тушить грудку на растит масле с луком. Салат огурец помидор болгарский перец лук\n" +
+            "Ужин каша кукурузная с слив маслом и творогом 2% и яйцо вареное\n" +
+            "Перекус шоколад молочный. Яблоко",
+      meals: [],
+    },
   };
 }
 
@@ -117,6 +124,7 @@ function load() {
         restrictions: { ...base.restrictions, ...(parsed.restrictions || {}) },
         menu: parsed.menu || base.menu,
         templates: { ...base.templates, ...(parsed.templates || {}) },
+        diary: parsed.diary || base.diary,
       };
       // согласовать число приёмов с режимом
       const n = merged.regimen.mealsPerDay;

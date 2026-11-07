@@ -161,6 +161,35 @@ textarea { resize: vertical; }
 
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
 
+/* Дневник / отчёт */
+.rep-card { padding: 0; overflow: hidden; }
+.rep-header { background: #6a1b9a; color: #fff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+.rep-title { font-weight: 700; font-size: 14px; }
+.rep-goal { font-weight: 700; font-size: 14px; }
+.rep-input { padding: 16px; }
+.rep-input label { font-size: 13px; }
+.rep-input textarea { width: 100%; margin-top: 6px; font-size: 14px; }
+.rep-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.rep-empty { padding: 0 16px 18px; color: var(--muted); font-size: 13px; }
+.rep-meal { margin: 0 16px 14px; }
+.rep-meal-head { color: #fff; font-weight: 700; font-size: 13px; padding: 7px 12px; border-radius: 8px 8px 0 0; }
+.rep-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.rep-table th, .rep-table td { border: 1px solid var(--line); padding: 5px 6px; text-align: center; }
+.rep-table th { background: #f0f0f0; font-size: 11px; color: #444; }
+.rep-table tbody tr:nth-child(even) { background: #f7f9fc; }
+.rep-table .t-left { text-align: left; }
+.rep-table .t-center { text-align: center; }
+.rep-table .dg { width: 64px; margin: 0; padding: 3px 5px; font-size: 12px; }
+.rep-subtotal td { font-size: 12px; }
+.rep-day-total { margin: 0 16px 14px; }
+.rep-dtotal { background: #1b5e20; color: #fff; font-weight: 700; }
+.rep-dtotal td { border-color: #1b5e20; }
+.comp-dtotal td.t-left, .rep-dtotal .t-left { text-align: left; }
+.rep-comp { margin: 0 16px 14px; }
+.rep-comp-head { background: #6a1b9a; color: #fff; font-weight: 700; font-size: 13px; padding: 7px 12px; border-radius: 8px 8px 0 0; }
+.rep-diff td { background: #f4f0fa; font-weight: 700; }
+.rep-footer { background: #6a1b9a; color: #fff; font-size: 12px; padding: 10px 16px; }
+
 @media (max-width: 720px) {
   .grid2, .dish-grid, .meals, .shop-grid { grid-template-columns: 1fr; }
   .row2 { grid-template-columns: 1fr 1fr; }

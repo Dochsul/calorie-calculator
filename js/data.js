@@ -9,6 +9,7 @@ export const PRODUCTS = [
   { id: "bulgur", name: "Булгур", cat: "Злаки и крупы", kcal: 340, p: 12, f: 1.3, c: 76, yield: 2.8, tags: ["grain"] },
   { id: "millet", name: "Пшено", cat: "Злаки и крупы", kcal: 340, p: 11, f: 3, c: 70, yield: 3.0, tags: ["grain"] },
   { id: "quinoa", name: "Киноа", cat: "Злаки и крупы", kcal: 370, p: 14, f: 6, c: 64, yield: 3.0, tags: ["grain"] },
+  { id: "corn_groats", name: "Кукурузная крупа", cat: "Злаки и крупы", kcal: 330, p: 8.3, f: 1.2, c: 71, yield: 3.0, tags: ["grain"] },
   // Макаронные изделия
   { id: "pasta", name: "Макароны", cat: "Макаронные изделия", kcal: 350, p: 12, f: 1.5, c: 70, yield: 2.2, tags: ["grain", "gluten"] },
   { id: "pasta_ww", name: "Макароны цельнозерновые", cat: "Макаронные изделия", kcal: 350, p: 14, f: 2, c: 65, yield: 2.2, tags: ["grain", "gluten"] },
@@ -69,12 +70,15 @@ export const PRODUCTS = [
   { id: "olive_oil", name: "Оливковое масло", cat: "Масла и жиры", kcal: 884, p: 0, f: 100, c: 0, yield: 1.0, tags: ["oil"] },
   { id: "butter", name: "Сливочное масло", cat: "Масла и жиры", kcal: 717, p: 0.9, f: 81, c: 0.7, yield: 1.0, tags: ["dairy"] },
   { id: "coconut_oil", name: "Кокосовое масло", cat: "Масла и жиры", kcal: 862, p: 0, f: 100, c: 0, yield: 1.0, tags: ["oil"] },
+  { id: "oil_sunflower", name: "Масло растительное", cat: "Масла и жиры", kcal: 884, p: 0, f: 100, c: 0, yield: 1.0, tags: ["oil"] },
   // Хлеб и выпечка
   { id: "bread_rye", name: "Хлеб ржаной", cat: "Хлеб и выпечка", kcal: 250, p: 8, f: 3, c: 48, yield: 1.0, tags: ["grain", "gluten"] },
   { id: "bread_ww", name: "Хлеб цельнозерновой", cat: "Хлеб и выпечка", kcal: 260, p: 9, f: 3, c: 50, yield: 1.0, tags: ["grain", "gluten"] },
+  { id: "flour_ww", name: "Мука цельнозерновая", cat: "Хлеб и выпечка", kcal: 340, p: 12, f: 2, c: 66, yield: 1.0, tags: ["grain", "gluten"] },
   // Сладкое
   { id: "honey", name: "Мёд", cat: "Сладкое", kcal: 304, p: 0.3, f: 0, c: 82, yield: 1.0, tags: ["sweet"] },
   { id: "chocolate_dark", name: "Тёмный шоколад", cat: "Сладкое", kcal: 546, p: 5, f: 31, c: 61, yield: 1.0, tags: ["sweet", "dairy"] },
+  { id: "chocolate_milk", name: "Шоколад молочный", cat: "Сладкое", kcal: 535, p: 7, f: 30, c: 60, yield: 1.0, tags: ["sweet", "dairy"] },
 ];
 
 export const PRODUCT_MAP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
