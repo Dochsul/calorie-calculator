@@ -235,8 +235,8 @@ textarea { resize: vertical; }
 .rep-table .dg { width: 64px; margin: 0; padding: 4px 6px; font-size: 12px; border-radius: 6px; }
 .rep-subtotal td { font-size: 12px; }
 .rep-day-total { margin: 0 20px 16px; }
-.rep-dtotal { background: var(--accent-d); color: var(--on-accent); font-weight: 700; }
-.rep-dtotal td { border-color: var(--accent-d); }
+.rep-dtotal { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.rep-dtotal td { border-color: var(--accent); }
 .comp-dtotal td.t-left, .rep-dtotal .t-left { text-align: left; }
 .rep-comp { margin: 0 20px 16px; }
 .rep-comp-head { background: var(--gold); color: var(--on-accent); font: 700 12px/1 var(--sans); padding: 8px 14px; border-radius: 10px 10px 0 0; letter-spacing: .6px; text-transform: uppercase; }
