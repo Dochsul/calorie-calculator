@@ -178,7 +178,12 @@ function bindTables(root) {
   root.querySelectorAll(".dg").forEach((inp) => {
     inp.onchange = (e) => {
       const mi = +e.target.dataset.mi, ii = +e.target.dataset.ii;
-      const v = parseFloat(e.target.value) || 0;
+      let v = parseFloat(e.target.value);
+      if (!Number.isFinite(v) || v <= 0) {
+        // запрет отрицательных и нулевых значений веса
+        e.target.value = "1";
+        v = 1;
+      }
       update((s) => (s.diary.meals[mi].ingredients[ii].grams = v));
       renderReport(root);
     };

@@ -139,20 +139,23 @@ function scanQuantities(norm) {
   return res;
 }
 
+// Валидация: только положительные конечные значения веса (>=1 г).
+const validGrams = (g) => (Number.isFinite(g) && g > 0 ? g : null);
+
 function resolveGrams(alias, q) {
   if (!q) return alias.grams;
+  let v;
   if (q.kind === "mass") {
     const [a, b] = q.nums;
-    if (b !== undefined) return Math.round(((a + b) / 2) * 10) / 10; // среднее диапазона
-    return a;
-  }
-  if (q.kind === "tbsp") return q.n * 15;
-  if (q.kind === "tsp") return q.n * 5;
-  if (q.kind === "cup") return q.n * 200;
-  if (q.kind === "sht") return q.n * (alias.perUnit || alias.grams);
-  if (q.kind === "piece") return q.n * alias.grams;
-  if (q.kind === "bare") return q.n * (alias.perUnit || alias.grams);
-  return alias.grams;
+    v = b !== undefined ? Math.round(((a + b) / 2) * 10) / 10 : a; // среднее диапазона
+  } else if (q.kind === "tbsp") v = q.n * 15;
+  else if (q.kind === "tsp") v = q.n * 5;
+  else if (q.kind === "cup") v = q.n * 200;
+  else if (q.kind === "sht") v = q.n * (alias.perUnit || alias.grams);
+  else if (q.kind === "piece") v = q.n * alias.grams;
+  else if (q.kind === "bare") v = q.n * (alias.perUnit || alias.grams);
+  else v = alias.grams;
+  return validGrams(v) != null ? Math.max(1, Math.round(v * 10) / 10) : alias.grams;
 }
 
 function parsePhrase(phrase) {
@@ -178,7 +181,9 @@ function parsePhrase(phrase) {
   const result = [];
   matches.forEach((m, i) => {
     if (!PRODUCT_MAP[m.alias.id]) return;
-    result.push({ productId: m.alias.id, grams: gramsByIdx[i] != null ? gramsByIdx[i] : m.alias.grams });
+    const g = gramsByIdx[i] != null ? gramsByIdx[i] : m.alias.grams;
+    if (validGrams(g) == null) return; // пропускаем некорректные/отрицательные значения
+    result.push({ productId: m.alias.id, grams: g });
   });
   return result;
 }
