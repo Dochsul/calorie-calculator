@@ -85,6 +85,93 @@ python3 -m http.server 3000 --directory .
 
 Then open <http://localhost:3000>.
 
+## Food diary format and adding products
+
+The diary parser (`js/parser.js`) turns free Russian text into structured meals. A meal
+marker (`Завтрак` / `Обед` / `Ужин` / `Перекус` / `Полдник`) starts a meal; the text that
+follows (up to the next marker) is split into phrases and matched against product aliases.
+Quantities are recognised as grams (`60 г`, ranges `100-150 г`), measures (`ст.л.`, `ч.л.`,
+`стакан`, `шт`, `ломтик`), or a bare number for piece products. Anything unmatched is ignored.
+
+```
+Завтрак: овсянка 60 г, молоко 150 г, мёд 1 ч.л., яйцо 1 шт
+Обед: гречка 70 г, куриная грудка 150 г, огурец, оливковое масло 1 ст.л.
+Ужин: лосось 150 г, брокколи 120 г, рис 50 г
+Перекус: творог 5% 150 г, банан 1 шт, яблоко
+```
+
+`parseDiary(text)` returns an array of meals — the JSON shape that the rest of the app
+(Diary table, totals, PDF) consumes:
+
+```jsonc
+[
+  {
+    "name": "Завтрак",                 // marker, capitalised
+    "ingredients": [
+      { "productId": "oats",        "grams": 60 },  // productId from data.js, grams >= 1
+      { "productId": "milk_25",     "grams": 150 },
+      { "productId": "honey",       "grams": 5 },   // 1 ч.л. → 1 * 5
+      { "productId": "egg",         "grams": 50 }   // 1 шт  → 1 * perUnit(50)
+    ]
+  }
+]
+```
+
+`grams` is always a positive finite number in `[1, 2000]` (`MIN_GRAMS`…`MAX_GRAMS`); values
+outside the range are clamped, and invalid/empty quantities fall back to the alias default.
+
+### Adding a new product
+
+Two edits are required — one in `js/data.js`, one in `js/parser.js`.
+
+**1. Register the product** in `js/data.js` (the `PRODUCTS` array). Fields are nutrients per
+100 g in the raw/dry state; `yield` is the cooked-to-raw mass ratio (cooked = raw × yield).
+
+```jsonc
+{
+  "id": "buckwheat",          // unique key, referenced by parser aliases and menu/diary
+  "name": "Гречка",           // display name (Russian)
+  "cat": "Злаки и крупы",      // category, used for grouping in shopping list & PDF
+  "kcal": 330,                // kcal per 100 g
+  "p": 12.6,                  // protein  per 100 g
+  "f": 3.3,                   // fat      per 100 g
+  "c": 62,                    // carbs    per 100 g
+  "yield": 3.0,               // cooked mass = raw mass × yield (e.g. 70 g → 210 g)
+  "tags": ["grain"]           // optional tags (vegetarian filter, etc.)
+}
+```
+
+**2. Add an alias** in `js/parser.js` (the `ALIASES` array) so free text maps to the product
+`id`. Aliases are matched as lower-case substrings on normalised text; **order matters** —
+list specific keys before generic ones (e.g. `оливк масло` before any bare `масло`), because
+the first match wins and the matched text is then masked out. Do not add a bare generic key
+that can be left over from a more specific alias (the standalone `масло` fallback was removed
+for this reason — it spawned a duplicate "Сливочное масло" after `оливковое масло`).
+
+```jsonc
+{
+  "id": "buckwheat",          // must match a product id from data.js
+  "keys": ["гречк", "гречнев"],// lower-case substrings; word-boundary checked before the key
+  "grams": 70,                // default weight when the text has no quantity
+  "perUnit": 60               // optional: weight per piece for шт/bare-number matching
+                              // (omit for non-piece products; resolveGrams uses grams instead)
+}
+```
+
+Quantity resolution (`resolveGrams`): `г` → the number (or the average of a range);
+`ст.л.` × 15; `ч.л.` × 5; `стакан` × 200; `шт` and bare numbers × `perUnit` (or `grams` if
+`perUnit` is absent); `ломтик/кусок` × `grams`.
+
+### Verifying a new product
+
+```bash
+node --test tests/parser.test.js   # existing parser tests still pass
+```
+
+Then add a phrase that uses the new alias to `tests/parser.test.js` (or check it live on the
+**Дневник** tab with the «Вставить тестовый дневник» button, which loads a sample diary
+covering grams, `ч.л.`/`ст.л.`, `шт`, and default-weight products).
+
 ## Tests
 
 The unit tests use Node's built-in test runner — no test framework or extra dependencies to
