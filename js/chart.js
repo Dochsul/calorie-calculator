@@ -25,8 +25,8 @@ function gridlines(a, maxV, steps = 4) {
   for (let i = 0; i <= steps; i++) {
     const v = (maxV / steps) * i;
     const y = a.y1 - (v / maxV) * a.h;
-    g += `<line x1="${a.x0}" y1="${y}" x2="${a.x1}" y2="${y}" stroke="#e7ecef" stroke-width="1"/>`;
-    g += `<text x="${a.x0 - 6}" y="${y + 3}" text-anchor="end" font-size="9" fill="#9aa7b4">${Math.round(v)}</text>`;
+    g += `<line x1="${a.x0}" y1="${y}" x2="${a.x1}" y2="${y}" stroke="#e6dfd2" stroke-width="1"/>`;
+    g += `<text x="${a.x0 - 6}" y="${y + 3}" text-anchor="end" font-size="9" fill="#6f7d72">${Math.round(v)}</text>`;
   }
   return g;
 }
@@ -43,13 +43,13 @@ export function kcalChart(history, goal) {
   let bars = gridlines(a, maxV);
   history.forEach((h, i) => {
     const cx = a.x0 + step * i + step / 2;
-    bars += `<rect x="${cx - bw / 2}" y="${y(h.kcal)}" width="${bw}" height="${a.y1 - y(h.kcal)}" rx="3" fill="#2f80ed"/>`;
-    bars += `<text x="${cx}" y="${a.y1 + 16}" text-anchor="middle" font-size="9" fill="#5c6b7a">${shortDate(h.date)}</text>`;
-    bars += `<text x="${cx}" y="${y(h.kcal) - 4}" text-anchor="middle" font-size="9" fill="#1f2933">${Math.round(h.kcal)}</text>`;
+    bars += `<rect x="${cx - bw / 2}" y="${y(h.kcal)}" width="${bw}" height="${a.y1 - y(h.kcal)}" rx="3" fill="#1f4d3f"/>`;
+    bars += `<text x="${cx}" y="${a.y1 + 16}" text-anchor="middle" font-size="9" fill="#6f7d72">${shortDate(h.date)}</text>`;
+    bars += `<text x="${cx}" y="${y(h.kcal) - 4}" text-anchor="middle" font-size="9" fill="#1c2620">${Math.round(h.kcal)}</text>`;
   });
   const gy = y(goal);
-  bars += `<line x1="${a.x0}" y1="${gy}" x2="${a.x1}" y2="${gy}" stroke="#d64545" stroke-dasharray="5 4" stroke-width="1.5"/>`;
-  bars += `<text x="${a.x1}" y="${gy - 4}" text-anchor="end" font-size="9" fill="#d64545">цель ${Math.round(goal)}</text>`;
+  bars += `<line x1="${a.x0}" y1="${gy}" x2="${a.x1}" y2="${gy}" stroke="#a9762f" stroke-dasharray="5 4" stroke-width="1.5"/>`;
+  bars += `<text x="${a.x1}" y="${gy - 4}" text-anchor="end" font-size="9" fill="#a9762f">цель ${Math.round(goal)}</text>`;
   return svgWrap("Калории по дням, ккал", bars);
 }
 
@@ -64,9 +64,9 @@ export function macroChart(history, goalMacros) {
   const y = (v) => a.y1 - (v / maxV) * a.h;
   let g = gridlines(a, maxV);
   const series = [
-    { key: "p", color: "#2faa6a", label: "Б" },
-    { key: "f", color: "#e0a93b", label: "Ж" },
-    { key: "c", color: "#2f80ed", label: "У" },
+    { key: "p", color: "#2f8056", label: "Б" },
+    { key: "f", color: "#b07a3b", label: "Ж" },
+    { key: "c", color: "#4a6fa5", label: "У" },
   ];
   for (const s of series) {
     const pts = history.map((h, i) => `${x(i)},${y(h[s.key])}`).join(" ");
@@ -75,11 +75,11 @@ export function macroChart(history, goalMacros) {
     const gv = goalMacros[s.key === "p" ? "proteins" : s.key === "f" ? "fats" : "carbs"];
     g += `<line x1="${a.x0}" y1="${y(gv)}" x2="${a.x1}" y2="${y(gv)}" stroke="${s.color}" stroke-dasharray="4 4" stroke-width="1" opacity="0.6"/>`;
   }
-  history.forEach((h, i) => (g += `<text x="${x(i)}" y="${a.y1 + 16}" text-anchor="middle" font-size="9" fill="#5c6b7a">${shortDate(h.date)}</text>`));
+  history.forEach((h, i) => (g += `<text x="${x(i)}" y="${a.y1 + 16}" text-anchor="middle" font-size="9" fill="#6f7d72">${shortDate(h.date)}</text>`));
   const legend = `<div class="chart-legend">
-    <span class="lg-item"><i class="lg-sw" style="background:#2faa6a"></i>Белки</span>
-    <span class="lg-item"><i class="lg-sw" style="background:#e0a93b"></i>Жиры</span>
-    <span class="lg-item"><i class="lg-sw" style="background:#2f80ed"></i>Углеводы</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#2f8056"></i>Белки</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#b07a3b"></i>Жиры</span>
+    <span class="lg-item"><i class="lg-sw" style="background:#4a6fa5"></i>Углеводы</span>
     <span class="hint">пунктир — цель</span>
   </div>`;
   return svgWrap("БЖУ по дням, г", g) + legend;

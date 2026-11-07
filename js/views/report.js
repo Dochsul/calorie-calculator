@@ -24,11 +24,11 @@ function dayTotals(meals) {
 }
 
 const MEAL_COLORS = {
-  "Завтрак": "#1b5e20",
-  "Обед": "#00897b",
-  "Ужин": "#5d4037",
-  "Перекус": "#6a1b9a",
-  "Полдник": "#6a1b9a",
+  "Завтрак": "#a9762f",
+  "Обед": "#1f4d3f",
+  "Ужин": "#34556a",
+  "Перекус": "#7a5f7e",
+  "Полдник": "#7a5f7e",
 };
 
 function measureFor(id, grams) {
@@ -126,7 +126,7 @@ function renderTables(s) {
       </tr>`;
     }).join("");
     dKcal += mKcal; dP += mP; dF += mF; dC += mC; dCooked += mCooked; dRaw += mRaw;
-    const color = MEAL_COLORS[meal.name] || "#00897b";
+    const color = MEAL_COLORS[meal.name] || "#1f4d3f";
     return `<div class="rep-meal">
       <div class="rep-meal-head" style="background:${color}">${esc(meal.name.toUpperCase())}</div>
       <table class="rep-table"><thead><tr>

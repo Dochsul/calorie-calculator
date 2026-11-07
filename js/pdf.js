@@ -66,23 +66,23 @@ function buildPrintHtml(state) {
 
   const client = state.client;
   return `<!doctype html><html lang="ru"><head><meta charset="utf-8">
-  <title>Меню AINA Evidence — ${escapeHtml(client.name || "клиент")}</title>
+  <title>Меню Aina Évidence — ${escapeHtml(client.name || "клиент")}</title>
   <style>
     @page { margin: 14mm; }
-    body { font: 12px/1.5 system-ui, Arial, sans-serif; color:#1f2933; }
-    h1 { font-size: 18px; margin:0 0 4px; }
-    h2 { font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid #d7e0ea; padding-bottom: 4px; }
-    h3 { font-size: 13px; margin: 12px 0 6px; color:#2f80ed; }
-    .pm-meta { color:#5c6b7a; font-size: 12px; margin-bottom: 10px; }
+    body { font: 12px/1.5 system-ui, Arial, sans-serif; color:#1c2620; }
+    h1 { font-size: 18px; margin:0 0 4px; font-family: Georgia, serif; }
+    h2 { font-size: 14px; margin: 18px 0 6px; border-bottom: 1px solid #e6dfd2; padding-bottom: 4px; color:#1f4d3f; font-family: Georgia, serif; }
+    h3 { font-size: 13px; margin: 12px 0 6px; color:#a9762f; }
+    .pm-meta { color:#6f7d72; font-size: 12px; margin-bottom: 10px; }
     .pm-day { margin-bottom: 14px; page-break-inside: avoid; }
     .pm-meal { margin: 4px 0 8px 12px; }
-    .pm-mhead { font-weight: 600; } .pm-mhead span { font-weight: 400; color:#5c6b7a; }
-    .pm-ings { color:#5c6b7a; font-size: 11px; }
-    .pm-macros { font-size: 11px; color:#2f80ed; }
-    .pm-dtotal { font-weight: 600; margin-top: 4px; background:#f4f8fd; padding:6px 8px; border-radius:6px; }
+    .pm-mhead { font-weight: 600; } .pm-mhead span { font-weight: 400; color:#6f7d72; }
+    .pm-ings { color:#6f7d72; font-size: 11px; }
+    .pm-macros { font-size: 11px; color:#1f4d3f; }
+    .pm-dtotal { font-weight: 600; margin-top: 4px; background:#e9f0ea; padding:6px 8px; border-radius:6px; }
     .pm-shop { column-count: 2; } .pm-shop li { break-inside: avoid; }
   </style></head><body>
-  <h1>Меню AINA Evidence</h1>
+  <h1>Меню Aina Évidence</h1>
   <div class="pm-meta">Клиент: ${escapeHtml(client.name || "—")} · Цель: ${cal} ккал/день · БЖУ 30/30/40</div>
   ${daysHtml}
   <h2>Список покупок</h2>
