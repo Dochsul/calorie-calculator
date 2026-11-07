@@ -8,7 +8,8 @@ export function renderPaywall(root) {
   root.innerHTML = `
     <section class="paywall">
       <div class="pw-card">
-        <div class="pw-brand">Aina <em>Évidence</em></div>
+        <div class="pw-brand"><span class="mark">A</span> Aina <em>Évidence</em></div>
+        <div class="pw-subtitle">Персональный конструктор меню</div>
         <h1 class="pw-title">Доступ к конструктору меню</h1>
         <p class="pw-sub">Персональное меню любой сложности: расчёт КБЖУ, меню по дням, замены продуктов, список покупок и экспорт в PDF.</p>
 
