@@ -1,5 +1,5 @@
 // Экран оплаты/входа: показывается, пока нет активной подписки.
-import { activateCode, enterAdminMode, startTrial, isTrialUsed } from "../auth.js";
+import { activateCode, enterAdminMode, startTrial, isTrialUsed, selectPlan } from "../auth.js";
 import { PAYMENT, PLANS, TRIAL_DAYS } from "../config.js";
 import { esc } from "../ui.js";
 
@@ -26,11 +26,12 @@ export function renderPaywall(root) {
         <div class="pw-plans-label">Тарифы</div>
         <div class="pw-plans">
           ${PLANS.map((p, i) => `
-            <div class="pw-plan ${i === 1 ? "pw-plan-popular" : ""}">
+            <div class="pw-plan ${i === 1 ? "pw-plan-popular" : ""}" data-plan="${i}" style="cursor:pointer" role="button" tabindex="0">
               ${p.save ? `<div class="pw-plan-badge">${esc(p.save)}</div>` : ""}
               <div class="pw-plan-name">${esc(p.label)}</div>
               <div class="pw-plan-price">${esc(p.price)} ₽</div>
               <div class="pw-plan-per">${esc(p.perMonth)}</div>
+              <div class="pw-plan-cta">Выбрать</div>
             </div>
           `).join("")}
         </div>
@@ -79,4 +80,19 @@ export function renderPaywall(root) {
   }
 
   root.querySelector("#pw_admin").onclick = () => enterAdminMode();
+
+  // Выбор тарифа: записывает план в localStorage и активирует пробный период
+  root.querySelectorAll("[data-plan]").forEach((card) => {
+    const choose = () => {
+      const plan = PLANS[parseInt(card.dataset.plan, 10)];
+      selectPlan(plan);
+      const res = startTrial();
+      if (!res.ok) {
+        err.textContent = res.error;
+        err.hidden = false;
+      }
+    };
+    card.onclick = choose;
+    card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(); } };
+  });
 }

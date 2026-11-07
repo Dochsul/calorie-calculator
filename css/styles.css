@@ -333,6 +333,8 @@ body, .topbar, .card, .tab, .btn, input, select, textarea,
 .pw-plan-name { font: 600 13px var(--sans); color: var(--ink); margin-bottom: 6px; }
 .pw-plan-price { font: 700 22px/1 var(--serif); color: var(--accent-d); margin-bottom: 4px; }
 .pw-plan-per { font-size: 11px; color: var(--muted); }
+.pw-plan-cta { margin-top: 10px; font: 600 12px var(--sans); color: var(--accent-d); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 0; }
+.pw-plan:hover { border-color: var(--accent); }
 
 @media (max-width: 480px) {
   .pw-plans { grid-template-columns: 1fr; gap: 8px; }

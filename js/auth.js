@@ -7,6 +7,7 @@ import { ADMIN_PIN } from "./config.js";
 const SUB_KEY = "aina_subscription";
 const CODES_KEY = "aina_access_codes"; // журнал сгенерированных кодов (только у админа)
 const TRIAL_KEY = "aina_trial_used";   // флаг: пробный период уже использован
+const PLAN_KEY = "aina_selected_plan";   // выбранный пользователем тариф
 const ADMIN_SESSION = "aina_admin_session";
 const DAY_MS = 86400000;
 const SALT = "aina-evidence-2026";
@@ -24,6 +25,15 @@ function saveSub(s) { localStorage.setItem(SUB_KEY, JSON.stringify(s)); }
 const authListeners = new Set();
 function notifyAuth() { authListeners.forEach((fn) => fn()); }
 export function subscribeAuth(fn) { authListeners.add(fn); return () => authListeners.delete(fn); }
+
+// --- Выбор тарифного плана ---
+export function getSelectedPlan() {
+  try { return JSON.parse(localStorage.getItem(PLAN_KEY)) || null; }
+  catch { return null; }
+}
+export function selectPlan(plan) {
+  localStorage.setItem(PLAN_KEY, JSON.stringify({ days: plan.days, label: plan.label, price: plan.price }));
+}
 
 // --- Пробный период (3 дня бесплатно, один раз) ---
 export function isTrialUsed() { return localStorage.getItem(TRIAL_KEY) === "1"; }
