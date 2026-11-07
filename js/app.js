@@ -32,7 +32,8 @@ function showTab(id) {
 }
 
 function ensureNav() {
-  if (navBuilt) { nav.classList.remove("hidden"); return; }
+  nav.classList.remove("hidden");
+  if (navBuilt) return;
   nav.innerHTML = "";
   TABS.forEach((t) => {
     const b = document.createElement("button");

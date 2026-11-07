@@ -4,6 +4,7 @@ import { getState, update, targetCalories } from "../store.js";
 import { calcMacros } from "../calc.js";
 import { PRODUCT_MAP } from "../data.js";
 import { parseDiary, MIN_GRAMS, MAX_GRAMS, clampInputGrams } from "../parser.js";
+import { fitMeals } from "../fit.js";
 import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
 
@@ -86,7 +87,8 @@ export function renderReport(root) {
         <div class="rep-actions">
           <label class="rep-date">Дата <input type="date" id="diary_date" value="${d.date || todayStr()}"></label>
           <button class="btn" id="diary_demo" title="Заполнить примером и распарсить">Вставить тестовый дневник</button>
-          <button class="btn primary" id="diary_parse">Составить таблицу</button>
+          <button class="btn" id="diary_parse">Составить таблицу</button>
+          <button class="btn primary" id="diary_fit" title="Если веса не указаны — подберёт граммовку под калорийность клиента">Составить и подобрать граммовку под цель</button>
           ${hasMeals ? '<button class="btn" id="diary_save">Сохранить день в историю</button>' : ""}
           ${hasMeals ? '<span class="hint">Граммы можно править прямо в таблице — итоги пересчитаются.</span>' : ""}
         </div>
@@ -104,6 +106,11 @@ export function renderReport(root) {
   };
   root.querySelector("#diary_parse").onclick = () => {
     const meals = parseDiary(getState().diary.text);
+    update((st) => (st.diary.meals = meals));
+    renderReport(root);
+  };
+  root.querySelector("#diary_fit").onclick = () => {
+    const meals = fitMeals(parseDiary(getState().diary.text), targetCalories());
     update((st) => (st.diary.meals = meals));
     renderReport(root);
   };

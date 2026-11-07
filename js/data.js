@@ -37,6 +37,8 @@ export const PRODUCTS = [
   { id: "egg_white", name: "Яичный белок", cat: "Яйца", kcal: 52, p: 11, f: 0.2, c: 0.7, yield: 1.0, tags: ["egg"] },
   // Молочные
   { id: "curd_5", name: "Творог 5%", cat: "Молочные", kcal: 121, p: 17, f: 5, c: 1.8, yield: 1.0, tags: ["dairy"] },
+  { id: "curd_2", name: "Творог 2%", cat: "Молочные", kcal: 103, p: 18, f: 2, c: 3.3, yield: 1.0, tags: ["dairy"] },
+  { id: "kefir_1", name: "Кефир 1%", cat: "Молочные", kcal: 40, p: 3, f: 1, c: 4, yield: 1.0, tags: ["dairy"] },
   { id: "curd_0", name: "Творог обезжиренный", cat: "Молочные", kcal: 85, p: 18, f: 0.6, c: 1.3, yield: 1.0, tags: ["dairy"] },
   { id: "milk_25", name: "Молоко 2.5%", cat: "Молочные", kcal: 52, p: 2.9, f: 2.5, c: 4.7, yield: 1.0, tags: ["dairy"] },
   { id: "greek_yogurt", name: "Греческий йогурт", cat: "Молочные", kcal: 59, p: 10, f: 0.4, c: 3.2, yield: 1.0, tags: ["dairy"] },
