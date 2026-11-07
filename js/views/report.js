@@ -3,7 +3,7 @@
 import { getState, update, targetCalories } from "../store.js";
 import { calcMacros } from "../calc.js";
 import { PRODUCT_MAP } from "../data.js";
-import { parseDiary, MIN_GRAMS, MAX_GRAMS } from "../parser.js";
+import { parseDiary, MIN_GRAMS, MAX_GRAMS, clampInputGrams } from "../parser.js";
 import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
 
@@ -180,16 +180,8 @@ function bindTables(root) {
   root.querySelectorAll(".dg").forEach((inp) => {
     inp.onchange = (e) => {
       const mi = +e.target.dataset.mi, ii = +e.target.dataset.ii;
-      let v = parseFloat(e.target.value);
-      if (!Number.isFinite(v) || v < MIN_GRAMS) {
-        // запрет отрицательных, нулевых и нечисловых значений веса
-        e.target.value = String(MIN_GRAMS);
-        v = MIN_GRAMS;
-      } else if (v > MAX_GRAMS) {
-        // ограничение сверху — защита от абсурдных значений веса
-        e.target.value = String(MAX_GRAMS);
-        v = MAX_GRAMS;
-      }
+      const v = clampInputGrams(e.target.value);
+      e.target.value = String(v);
       update((s) => (s.diary.meals[mi].ingredients[ii].grams = v));
       renderReport(root);
     };

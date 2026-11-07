@@ -148,6 +148,16 @@ export const validGrams = (g) => (Number.isFinite(g) && g > 0 ? g : null);
 // Валидация калорийности продукта: конечное неотрицательное число.
 export const validKcal = (k) => (Number.isFinite(k) && k >= 0 ? k : null);
 
+// Валидация ввода веса пользователем (поле дневника): ограничивает значение
+// диапазоном [MIN_GRAMS, MAX_GRAMS] (1–2000 г). Некорректные/неположительные
+// значения сбрасываются к минимуму, превышающие максимум — к максимуму.
+export const clampInputGrams = (v) => {
+  const g = parseFloat(v);
+  if (!Number.isFinite(g) || g < MIN_GRAMS) return MIN_GRAMS;
+  if (g > MAX_GRAMS) return MAX_GRAMS;
+  return g;
+};
+
 // Ограничиваем вес разумным диапазоном, чтобы исключить абсурдные значения
 // (например, «99999 г»), которые дали бы невозможную калорийность.
 const clampGrams = (g) => Math.min(MAX_GRAMS, Math.max(MIN_GRAMS, Math.round(g * 10) / 10));
