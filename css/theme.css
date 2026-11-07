@@ -1,0 +1,117 @@
+:root {
+  /* — Цвета Aina Évidence (светлая тема) — */
+  --bg: #f6f2ea;          /* тёплая слоновая кость — фон */
+  --card: #ffffff;        /* карточки */
+  --ink: #1c2620;         /* основной текст */
+  --muted: #6f7d72;       /* вспомогательный текст */
+  --accent: #1f4d3f;      /* лесной зелёный — основной брендовый */
+  --accent-d: #163a2f;    /* тёмный оттенок основного */
+  --accent-soft: #e9f0ea; /* мягкий фон основного */
+  --gold: #a9762f;        /* охра — акцент */
+  --line: #e6dfd2;        /* тёплая hairline */
+  --soft: #f2ede3;        /* мягкий фон */
+  --danger: #b4452f;      /* предупреждение / перебор */
+  --ok: #2f8056;          /* норма / недобор в плюс */
+
+  /* — Поверхности и текст на акценте — */
+  --surface: #ffffff;           /* фон полей ввода */
+  --surface-warm: #fffdf9;      /* тёплый фон строк/слотов */
+  --on-accent: #ffffff;         /* текст поверх акцента */
+  --on-accent-soft: rgba(255,255,255,.7);
+
+  /* — Часто используемые оттенки — */
+  --tag-bg: #f4ebdb;            /* фон тега */
+  --th-bg: #f7f3ea;             /* фон заголовков таблиц */
+  --row-alt: #fcfaf5;           /* чередующиеся строки */
+  --diff-bg: #f7f1e6;           /* фон строки отклонений */
+  --rep-goal: #f4e9d4;          /* текст цели в шапке отчёта */
+  --summary-border: #d4e2d6;    /* рамка сводки блюда */
+  --btn-hover-border: #d8d0bf;  /* граница кнопки при hover */
+  --danger-border: #e8d3cd;     /* граница danger-кнопки */
+  --danger-hover-bg: #faf3f1;   /* фон danger-кнопки при hover */
+  --result-grad-top: #fbfaf6;   /* верхний цвет градиента карточки */
+
+  /* — Эффекты — */
+  --shadow: 0 1px 2px rgba(28,38,32,.04), 0 6px 18px rgba(28,38,32,.05);
+  --focus-ring: rgba(31,77,63,.12);
+  --primary-shadow: 0 2px 6px rgba(31,77,63,.18);
+
+  /* — Графики (SVG) — */
+  --chart-bar: #1f4d3f;        /* столбцы калорий */
+  --chart-grid: #e6dfd2;       /* линии сетки */
+  --chart-axis: #6f7d72;       /* подписи осей */
+  --chart-text: #1c2620;      /* значения над столбцами */
+  --chart-goal: #a9762f;      /* линия цели */
+  --chart-protein: #2f8056;   /* линия белков */
+  --chart-fat: #b07a3b;       /* линия жиров */
+  --chart-carb: #4a6fa5;      /* линия углеводов */
+
+  /* — Шрифты — */
+  --serif: Georgia, "Times New Roman", "Noto Serif", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* — Тёмная тема — */
+[data-theme="dark"] {
+  --bg: #171c19;
+  --card: #222a26;
+  --ink: #e8e4d8;
+  --muted: #99a39a;
+  --accent: #2d6651;
+  --accent-d: #6ba889;
+  --accent-soft: #1f3329;
+  --gold: #c8954a;
+  --line: #33403a;
+  --soft: #28332e;
+  --danger: #d4624a;
+  --ok: #4ea878;
+
+  --surface: #222a26;
+  --surface-warm: #28332e;
+  --on-accent: #f0ede4;
+  --on-accent-soft: rgba(240,237,228,.6);
+
+  --tag-bg: #3a3022;
+  --th-bg: #1e2622;
+  --row-alt: #252d29;
+  --diff-bg: #33291a;
+  --rep-goal: #e8d09a;
+  --summary-border: #2d4a3a;
+  --btn-hover-border: #45524c;
+  --danger-border: #4a332e;
+  --danger-hover-bg: #2e2220;
+  --result-grad-top: #1e2622;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.25);
+  --focus-ring: rgba(45,102,81,.3);
+  --primary-shadow: 0 2px 6px rgba(0,0,0,.3);
+
+  /* — Графики (SVG) — брендовые цвета тёмной темы — */
+  --chart-bar: #2d6651;        /* столбцы — лесной зелёный */
+  --chart-grid: #33403a;
+  --chart-axis: #99a39a;
+  --chart-text: #e8e4d8;
+  --chart-goal: #c8954a;        /* линия цели — охра */
+  --chart-protein: #4ea878;    /* белки — светлый зелёный */
+  --chart-fat: #d8a85a;        /* жиры — янтарная охра (отлична от цели) */
+  --chart-carb: #b08d4e;       /* углеводы — приглушённая охра (брендовая) */
+}
+
+/* — Адаптивное сужение таблиц отчёта (Дневник) для мобильных —
+   Колонки сжимаются (меньший шрифт/отступы, узкое поле веса, перенос
+   названия продукта), чтобы 9–10-колоночная таблица помещалась в экран
+   без горизонтального скролла. Селекторы с .rep-card выше специфичностью
+   базовых правил в styles.css, поэтому перекрывают их надёжно. */
+@media (max-width: 600px) {
+  .rep-card .rep-table { font-size: 10px; table-layout: fixed; width: 100%; }
+  .rep-card .rep-table th,
+  .rep-card .rep-table td { padding: 4px 3px; }
+  .rep-card .rep-table th { font-size: 9px; letter-spacing: 0; white-space: normal; }
+  .rep-card .rep-table th.t-left { width: 27%; }
+  .rep-card .rep-table .t-left { word-break: break-word; }
+  .rep-card .rep-table .dg { width: 100%; box-sizing: border-box; padding: 3px 4px; font-size: 10px; }
+  .rep-card .rep-input { padding: 14px 12px; }
+  .rep-card .rep-meal,
+  .rep-card .rep-day-total,
+  .rep-card .rep-comp { margin-left: 10px; margin-right: 10px; }
+}
