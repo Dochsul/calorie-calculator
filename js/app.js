@@ -1,5 +1,8 @@
-// Точка входа: навигация по вкладкам и первичный рендер.
+// Точка входа: навигация по вкладкам, первичный рендер и шлюз оплаты (подписка по коду).
 import { subscribe } from "./store.js";
+import { subscribeAuth, isActive, adminMode } from "./auth.js";
+import { renderPaywall } from "./views/paywall.js";
+import { renderAdmin } from "./views/admin.js";
 import { renderClient } from "./views/client.js";
 import { renderMenu } from "./views/menu.js";
 import { renderDishes } from "./views/dishes.js";
@@ -18,28 +21,43 @@ const TABS = [
 
 let current = "client";
 const main = document.getElementById("app");
+const nav = document.getElementById("nav");
+let navBuilt = false;
 
-function show(id) {
+function showTab(id) {
   current = id;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === id));
   const view = TABS.find((t) => t.id === id);
   if (view) view.render(main);
 }
 
-const nav = document.getElementById("nav");
-TABS.forEach((t) => {
-  const b = document.createElement("button");
-  b.className = "tab";
-  b.dataset.tab = t.id;
-  b.textContent = t.label;
-  b.onclick = () => show(t.id);
-  nav.appendChild(b);
-});
+function ensureNav() {
+  if (navBuilt) { nav.classList.remove("hidden"); return; }
+  nav.innerHTML = "";
+  TABS.forEach((t) => {
+    const b = document.createElement("button");
+    b.className = "tab";
+    b.dataset.tab = t.id;
+    b.textContent = t.label;
+    b.onclick = () => showTab(t.id);
+    nav.appendChild(b);
+  });
+  navBuilt = true;
+}
 
-// Перерисовываем текущую вкладку при изменении состояния
+// Шлюз: админка → экран оплаты → приложение (когда подписка активна)
+function gate() {
+  if (adminMode()) { nav.classList.add("hidden"); renderAdmin(main); return; }
+  if (!isActive()) { nav.classList.add("hidden"); renderPaywall(main); return; }
+  ensureNav();
+  showTab(current);
+}
+
+// Перерисовка текущей вкладки при изменении данных — только когда доступ открыт
 subscribe(() => {
-  const view = TABS.find((t) => t.id === current);
-  if (view) view.render(main);
+  if (isActive() && !adminMode()) { ensureNav(); showTab(current); }
 });
+// Переключение между экраном оплаты, админкой и приложением
+subscribeAuth(gate);
 
-show("client");
+gate();
