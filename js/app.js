@@ -5,7 +5,7 @@ import { renderMenu } from "./views/menu.js";
 import { renderDishes } from "./views/dishes.js";
 import { renderTemplates } from "./views/templates.js";
 import { renderShopping } from "./views/shopping.js";
-import { renderReport } from "./views/report.js?v=2";
+import { renderReport } from "./views/report.js";
 
 const TABS = [
   { id: "client", label: "Анкета", render: renderClient },
