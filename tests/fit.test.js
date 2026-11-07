@@ -20,7 +20,7 @@ test("парсер понимает сообщения без граммовок
 });
 
 test("кефир 1% и мацарелла распознаются", () => {
-  const ids = parseDiary("Завтрак панкейки яйцо кефир 1% цельнозерновая мука. Обед сыр мацарелла")
+  const ids = parseDiary("Завтрак панкейки. яйцо кефир 1% цельнозерновая мука. Обед сыр мацарелла")
     .flatMap((m) => m.ingredients.map((g) => g.productId));
   assert.ok(ids.includes("kefir_1") && ids.includes("flour_ww") && ids.includes("mozzarella"));
 });

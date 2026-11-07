@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseDiary, parsePhrase, validGrams, validKcal, validIngredient, MIN_GRAMS, MAX_GRAMS } from "../js/parser.js";
+import { PRODUCT_MAP } from "../js/data.js";
 
 // ---------- validGrams: базовая валидация веса ----------
 test("validGrams пропускает положительные числа", () => {
@@ -200,6 +201,92 @@ test("parsePhrase ограничивает вес по штучной мере �
   const ings = parsePhrase("5000 яйца");
   assert.equal(ings.length, 1);
   assert.ok(ings[0].grams <= MAX_GRAMS, `вес ${ings[0].grams} превышает максимум`);
+});
+
+// ---------- Комплексные блюда (суп, панкейки, борщ, сырники) ----------
+
+test("parsePhrase распознаёт куриный суп как единую позицию", () => {
+  const ings = parsePhrase("куриный суп");
+  assert.equal(ings.length, 1, "суп должен быть одной позицией, не суммой ингредиентов");
+  assert.equal(ings[0].productId, "soup_chicken");
+  assert.ok(ings[0].grams > 0);
+  assert.ok(PRODUCT_MAP[ings[0].productId].composite === true, "продукт должен быть отмечен как комплексный");
+});
+
+test("parsePhrase распознаёт суп с указанной граммовкой", () => {
+  const ings = parsePhrase("куриный суп 350 г");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "soup_chicken");
+  assert.equal(ings[0].grams, 350);
+});
+
+test("parsePhrase не разбивает суп на отдельные ингредиенты", () => {
+  const ings = parsePhrase("куриный суп с картофелем");
+  assert.equal(ings.length, 1, "суп с картофелем — одна позиция, не суп + картофель");
+  assert.equal(ings[0].productId, "soup_chicken");
+  // картофель не должен появиться отдельным ингредиентом
+  assert.ok(!ings.some((i) => i.productId === "potato"), "картофель не должен дублироваться");
+});
+
+test("parsePhrase различает овощной и куриный суп", () => {
+  const veg = parsePhrase("овощной суп");
+  assert.equal(veg.length, 1);
+  assert.equal(veg[0].productId, "soup_veg");
+
+  const chicken = parsePhrase("куриный суп");
+  assert.equal(chicken.length, 1);
+  assert.equal(chicken[0].productId, "soup_chicken");
+});
+
+test("parsePhrase распознаёт борщ как единое блюдо", () => {
+  const ings = parsePhrase("борщ");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "borscht");
+  assert.ok(ings[0].grams > 0);
+});
+
+test("parsePhrase распознаёт банановые панкейки", () => {
+  const ings = parsePhrase("панкейки банановые");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "pancakes_banana");
+  assert.ok(ings[0].grams > 0);
+});
+
+test("parsePhrase: панкейки без уточнения — овсяные", () => {
+  const ings = parsePhrase("панкейки");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "pancakes_oat");
+});
+
+test("parsePhrase распознаёт сырники", () => {
+  const ings = parsePhrase("сырники");
+  assert.equal(ings.length, 1);
+  assert.equal(ings[0].productId, "syrniki");
+  assert.ok(ings[0].grams > 0);
+});
+
+test("parsePhrase: комплексное блюдо и отдельный продукт в одной фразе — только блюдо", () => {
+  const ings = parsePhrase("суп с курицей и картофелем");
+  assert.equal(ings.length, 1, "комплексное блюдо поглощает всю фразу");
+  assert.equal(ings[0].productId, "soup_chicken");
+});
+
+test("parseDiary: суп и хлеб в разных строках — обе позиции", () => {
+  const meals = parseDiary("Обед: куриный суп\nхлеб ржаной ломтик");
+  const allIngs = meals.flatMap((m) => m.ingredients);
+  const soup = allIngs.find((i) => i.productId === "soup_chicken");
+  const bread = allIngs.find((i) => i.productId === "bread_rye");
+  assert.ok(soup, "суп должен распознаться");
+  assert.ok(bread, "хлеб должен распознаться отдельно (другая строка)");
+});
+
+test("parseDiary: комплексные блюда корректно разделяются по приёмам", () => {
+  const meals = parseDiary("Завтрак: панкейки банановые\nОбед: борщ\nУжин: сырники");
+  assert.ok(meals.length >= 3);
+  const allIngs = meals.flatMap((m) => m.ingredients);
+  assert.ok(allIngs.some((i) => i.productId === "pancakes_banana"), "панкейки на завтраке");
+  assert.ok(allIngs.some((i) => i.productId === "borscht"), "борщ на обеде");
+  assert.ok(allIngs.some((i) => i.productId === "syrniki"), "сырники на ужине");
 });
 
 test("parseDiary не пропускает ингредиенты с весом выше максимума как есть", () => {

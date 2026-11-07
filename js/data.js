@@ -1,6 +1,8 @@
 // База продуктов: нутриенты на 100 г в сухом/сыром виде.
 // yield — коэффициент выхода готовой массы к сырой (готовая = сырая * yield).
-export const PRODUCTS = [
+import { COMPOSITE_RECIPES } from "./composite.js";
+
+const BASE_PRODUCTS = [
   // Злаки и крупы (сухие)
   { id: "rice_white", name: "Рис белый", cat: "Злаки и крупы", kcal: 330, p: 7, f: 0.6, c: 73, yield: 3.0, tags: ["grain"] },
   { id: "rice_brown", name: "Рис бурый", cat: "Злаки и крупы", kcal: 340, p: 7.5, f: 2.7, c: 73, yield: 3.0, tags: ["grain"] },
@@ -83,6 +85,44 @@ export const PRODUCTS = [
   { id: "chocolate_milk", name: "Шоколад молочный", cat: "Сладкое", kcal: 535, p: 7, f: 30, c: 60, yield: 1.0, tags: ["sweet", "dairy"] },
 ];
 
+// --- Комплексные блюда (суп, панкейки, борщ, сырники) ---
+// КБЖУ на 100 г готового блюда вычисляется из ингредиентов рецепта.
+// yield = 1.0 (нутриенты уже на 100 г готового блюда), флаг composite = true.
+function computeCompositeProducts(recipes, productMap) {
+  return recipes.map((r) => {
+    let kcal = 0, p = 0, f = 0, c = 0, mass = 0;
+    for (const ing of r.ingredients) {
+      const prod = productMap[ing.productId];
+      if (!prod) continue;
+      const g = ing.grams;
+      mass += g;
+      kcal += (prod.kcal * g) / 100;
+      p += (prod.p * g) / 100;
+      f += (prod.f * g) / 100;
+      c += (prod.c * g) / 100;
+    }
+    mass += r.water || 0; // вода/бульон увеличивают массу выхода без калорий
+    const r10 = (n) => Math.round(n * 10) / 10;
+    return {
+      id: r.id,
+      name: r.name,
+      cat: "Комплексные блюда",
+      kcal: r10((kcal / mass) * 100),
+      p: r10((p / mass) * 100),
+      f: r10((f / mass) * 100),
+      c: r10((c / mass) * 100),
+      yield: 1.0,
+      tags: r.tags || [],
+      composite: true,
+      components: r.ingredients,
+    };
+  });
+}
+
+const _baseMap = Object.fromEntries(BASE_PRODUCTS.map((p) => [p.id, p]));
+const COMPOSITE_PRODUCTS = computeCompositeProducts(COMPOSITE_RECIPES, _baseMap);
+
+export const PRODUCTS = [...BASE_PRODUCTS, ...COMPOSITE_PRODUCTS];
 export const PRODUCT_MAP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
 
 export const CATEGORIES = [...new Set(PRODUCTS.map((p) => p.cat))];

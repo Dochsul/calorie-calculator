@@ -4,6 +4,7 @@
 // (ст.л./ч.л./стакан/шт/ломтик/кусок), bare-числа для штучных продуктов
 // и привязку количества к ближайшему/следующему продукту.
 import { PRODUCT_MAP } from "./data.js";
+import { COMPOSITE_RECIPES } from "./composite.js";
 
 // Псевдонимы: ключи — подстроки (нижний регистр), порядок важен (спец. → общ.).
 const ALIASES = [
@@ -82,6 +83,47 @@ const ALIASES = [
 const isLetter = (ch) => /[a-zа-я]/i.test(ch);
 // граница после кириллической единицы — не должна следовать буква
 const NOT_LETTER = "(?![а-яa-z])";
+
+// Алиасы комплексных блюд — распознаются как единые позиции, а не сумма
+// ингредиентов. Порядок важен: более конкретные ключи (длиннее) должны идти
+// раньше общих (например, «суп овощной» раньше «суп»).
+const COMPOSITE_ALIASES = COMPOSITE_RECIPES.map((r) => ({
+  id: r.id,
+  keys: r.keys,
+  grams: r.grams,
+}));
+
+// Сканирует нормализованную фразу на комплексные блюда (суп, панкейки и т.д.).
+// При перекрытии совпадений оставляет самое длинное (например, «суп овощной» →
+// овощной суп, а не куриный по короткому ключу «суп»).
+function scanComposite(norm) {
+  const candidates = [];
+  for (const a of COMPOSITE_ALIASES) {
+    let bestKey = null, bestIdx = -1;
+    for (const key of a.keys) {
+      let idx = -1, from = 0;
+      while (true) {
+        const i = norm.indexOf(key, from);
+        if (i < 0) break;
+        const before = i > 0 ? norm[i - 1] : " ";
+        if (!isLetter(before)) { idx = i; break; }
+        from = i + 1;
+      }
+      if (idx >= 0 && (!bestKey || key.length > bestKey.length)) {
+        bestKey = key;
+        bestIdx = idx;
+      }
+    }
+    if (bestKey) candidates.push({ alias: a, start: bestIdx, end: bestIdx + bestKey.length });
+  }
+  // Убираем перекрывающиеся совпадения, оставляя самое длинное
+  candidates.sort((a, b) => (b.end - b.start) - (a.end - a.start));
+  const result = [];
+  for (const c of candidates) {
+    if (result.every((r) => c.start >= r.end || c.end <= r.start)) result.push(c);
+  }
+  return result.sort((a, b) => a.start - b.start);
+}
 
 // Сопоставляет продукты в нормализованной фразе, затирая найденные ключи.
 // Требует границу слова перед ключом (чтобы «рис» не ловился внутри «ирис»).
@@ -196,6 +238,28 @@ function resolveGrams(alias, q) {
 export function parsePhrase(phrase) {
   const norm = normalize(phrase);
   if (!norm) return [];
+
+  // Комплексные блюда (суп, панкейки, борщ и т.д.) распознаются как единые
+  // позиции, а не сумма ингредиентов — остальные продукты во фразе
+  // (например, «картофель» в «суп с картофелем») не дублируются отдельно.
+  const composite = scanComposite(norm);
+  if (composite.length) {
+    const quants = scanQuantities(norm);
+    const usedQ = new Set();
+    return composite.map((c) => {
+      const center = (c.start + c.end) / 2;
+      const massQs = quants.filter((q) => q.kind === "mass" && !usedQ.has(q));
+      let grams = c.alias.grams;
+      if (massQs.length) {
+        const nearest = massQs.sort((a, b) => Math.abs(a.start - center) - Math.abs(b.start - center))[0];
+        usedQ.add(nearest);
+        grams = resolveGrams({ grams: c.alias.grams }, nearest);
+      }
+      const ing = { productId: c.alias.id, grams: clampGrams(grams) };
+      return validIngredient(ing) ? ing : null;
+    }).filter(Boolean);
+  }
+
   const matches = scanAliases(norm);
   const quants = scanQuantities(norm);
   const usedM = new Set();
