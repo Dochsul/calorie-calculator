@@ -86,13 +86,13 @@
   --focus-ring: rgba(45,102,81,.3);
   --primary-shadow: 0 2px 6px rgba(0,0,0,.3);
 
-  /* — Графики (SVG) — */
-  --chart-bar: #2d6651;
+  /* — Графики (SVG) — брендовые цвета тёмной темы — */
+  --chart-bar: #2d6651;        /* столбцы — лесной зелёный */
   --chart-grid: #33403a;
   --chart-axis: #99a39a;
   --chart-text: #e8e4d8;
-  --chart-goal: #c8954a;
-  --chart-protein: #4ea878;
-  --chart-fat: #c8954a;
-  --chart-carb: #6a8fc5;
+  --chart-goal: #c8954a;        /* линия цели — охра */
+  --chart-protein: #4ea878;    /* белки — светлый зелёный */
+  --chart-fat: #d8a85a;        /* жиры — янтарная охра (отлична от цели) */
+  --chart-carb: #b08d4e;       /* углеводы — приглушённая охра (брендовая) */
 }
