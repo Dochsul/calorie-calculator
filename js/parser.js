@@ -140,7 +140,7 @@ function scanQuantities(norm) {
 }
 
 // Валидация: только положительные конечные значения веса (>=1 г).
-const validGrams = (g) => (Number.isFinite(g) && g > 0 ? g : null);
+export const validGrams = (g) => (Number.isFinite(g) && g > 0 ? g : null);
 
 function resolveGrams(alias, q) {
   if (!q) return alias.grams;
@@ -158,7 +158,7 @@ function resolveGrams(alias, q) {
   return validGrams(v) != null ? Math.max(1, Math.round(v * 10) / 10) : alias.grams;
 }
 
-function parsePhrase(phrase) {
+export function parsePhrase(phrase) {
   const norm = normalize(phrase);
   if (!norm) return [];
   const matches = scanAliases(norm);
