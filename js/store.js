@@ -100,6 +100,8 @@ export function defaultState() {
             "Ужин каша кукурузная с слив маслом и творогом 2% и яйцо вареное\n" +
             "Перекус шоколад молочный. Яблоко",
       meals: [],
+      date: "",
+      history: [],
     },
   };
 }
@@ -124,7 +126,7 @@ function load() {
         restrictions: { ...base.restrictions, ...(parsed.restrictions || {}) },
         menu: parsed.menu || base.menu,
         templates: { ...base.templates, ...(parsed.templates || {}) },
-        diary: parsed.diary || base.diary,
+        diary: { ...base.diary, ...(parsed.diary || {}) },
       };
       // согласовать число приёмов с режимом
       const n = merged.regimen.mealsPerDay;

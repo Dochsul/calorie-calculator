@@ -4,7 +4,24 @@ import { getState, update, targetCalories } from "../store.js";
 import { calcMacros } from "../calc.js";
 import { PRODUCT_MAP } from "../data.js";
 import { parseDiary } from "../parser.js";
+import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
+
+function todayStr() {
+  const d = new Date();
+  const tz = d.getTimezoneOffset() * 60000;
+  return new Date(d - tz).toISOString().slice(0, 10);
+}
+
+function dayTotals(meals) {
+  let kcal = 0, p = 0, f = 0, c = 0;
+  for (const meal of meals)
+    for (const ing of meal.ingredients) {
+      const n = ingNutri(ing.productId, parseFloat(ing.grams) || 0);
+      kcal += n.kcal; p += n.p; f += n.f; c += n.c;
+    }
+  return { kcal, p, f, c };
+}
 
 const MEAL_COLORS = {
   "Завтрак": "#1b5e20",
@@ -56,7 +73,9 @@ export function renderReport(root) {
         <label>Что съел клиент сегодня (свободным текстом)</label>
         <textarea id="diary_text" rows="6">${esc(d.text)}</textarea>
         <div class="rep-actions">
+          <label class="rep-date">Дата <input type="date" id="diary_date" value="${d.date || todayStr()}"></label>
           <button class="btn primary" id="diary_parse">Составить таблицу</button>
+          ${hasMeals ? '<button class="btn" id="diary_save">Сохранить день в историю</button>' : ""}
           ${hasMeals ? '<span class="hint">Граммы можно править прямо в таблице — итоги пересчитаются.</span>' : ""}
         </div>
       </div>
@@ -67,6 +86,22 @@ export function renderReport(root) {
   root.querySelector("#diary_parse").onclick = () => {
     const meals = parseDiary(getState().diary.text);
     update((st) => (st.diary.meals = meals));
+    renderReport(root);
+  };
+  const dateEl = root.querySelector("#diary_date");
+  if (dateEl) dateEl.onchange = (e) => update((st) => (st.diary.date = e.target.value));
+  const saveEl = root.querySelector("#diary_save");
+  if (saveEl) saveEl.onclick = () => {
+    const st = getState();
+    const date = st.diary.date || todayStr();
+    const t = dayTotals(st.diary.meals);
+    update((s) => {
+      const h = s.diary.history;
+      const i = h.findIndex((x) => x.date === date);
+      const entry = { date, kcal: t.kcal, p: t.p, f: t.f, c: t.c };
+      if (i >= 0) h[i] = entry; else h.push(entry);
+      h.sort((a, b) => (a.date < b.date ? -1 : 1));
+    });
     renderReport(root);
   };
   if (hasMeals) bindTables(root);
@@ -135,7 +170,8 @@ function renderTables(s) {
 
   const footerHtml = `<div class="rep-footer">Следите за порциями и интервалами 2–3 часа. БЖУ 30/30/40. Так держать! 💪</div>`;
 
-  return mealsHtml + dailyHtml + compHtml + footerHtml;
+  const charts = chartsHtml(s.diary.history, cal, tm);
+  return mealsHtml + dailyHtml + compHtml + charts + footerHtml;
 }
 
 function bindTables(root) {
