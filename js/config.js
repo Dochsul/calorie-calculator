@@ -21,4 +21,4 @@ export const TRIAL_DAYS = 3;
 
 // PIN-код администратора для входа в панель генерации кодов.
 // Смените после первого входа. Хранится в исходном коде (защита мягкая — см. README).
-export const ADMIN_PIN = "aina2026";
+export const ADMIN_PIN = "8899";
