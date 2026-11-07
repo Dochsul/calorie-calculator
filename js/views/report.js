@@ -7,6 +7,15 @@ import { parseDiary, MIN_GRAMS, MAX_GRAMS, clampInputGrams } from "../parser.js"
 import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
 
+// Тестовый дневник для быстрой проверки парсера и PDF-экспорта без ручного ввода.
+// Покрывает: маркеры приёмов пищи, граммовку, меры (ч.л./ст.л./шт), штучные
+// продукты (яйцо, банан) и продукты с весом по умолчанию (огурец, помидор, яблоко).
+const TEST_DIARY =
+  "Завтрак: овсянка 60 г, молоко 150 г, ягоды 100 г, мёд 1 ч.л., яйцо 1 шт\n" +
+  "Обед: гречка 70 г, куриная грудка 150 г, огурец, помидор, болгарский перец, оливковое масло 1 ст.л.\n" +
+  "Ужин: лосось 150 г, брокколи 120 г, рис 50 г\n" +
+  "Перекус: творог 5% 150 г, банан 1 шт, миндаль 15 г, яблоко";
+
 function todayStr() {
   const d = new Date();
   const tz = d.getTimezoneOffset() * 60000;
@@ -76,6 +85,7 @@ export function renderReport(root) {
         <textarea id="diary_text" rows="6">${esc(d.text)}</textarea>
         <div class="rep-actions">
           <label class="rep-date">Дата <input type="date" id="diary_date" value="${d.date || todayStr()}"></label>
+          <button class="btn" id="diary_demo" title="Заполнить примером и распарсить">Вставить тестовый дневник</button>
           <button class="btn primary" id="diary_parse">Составить таблицу</button>
           ${hasMeals ? '<button class="btn" id="diary_save">Сохранить день в историю</button>' : ""}
           ${hasMeals ? '<span class="hint">Граммы можно править прямо в таблице — итоги пересчитаются.</span>' : ""}
@@ -85,6 +95,13 @@ export function renderReport(root) {
     </section>`;
 
   root.querySelector("#diary_text").oninput = (e) => update((st) => (st.diary.text = e.target.value));
+  const demoEl = root.querySelector("#diary_demo");
+  if (demoEl) demoEl.onclick = () => {
+    update((st) => (st.diary.text = TEST_DIARY));
+    const meals = parseDiary(TEST_DIARY);
+    update((st) => (st.diary.meals = meals));
+    renderReport(root);
+  };
   root.querySelector("#diary_parse").onclick = () => {
     const meals = parseDiary(getState().diary.text);
     update((st) => (st.diary.meals = meals));
