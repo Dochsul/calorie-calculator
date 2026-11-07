@@ -24,7 +24,7 @@ function renderLogin(root) {
         <button type="submit" class="btn primary">Войти</button>
         <p id="adm_err" class="pw-err" hidden>Неверный PIN-код</p>
       </form>
-      <button id="adm_back" class="btn sm" type="button" style="margin-top:14px">Назад</button>
+      <button id="adm_back" class="btn sm adm-back" type="button">Назад</button>
     </section>`;
   const form = root.querySelector("#adm_login");
   form.onsubmit = (e) => {
@@ -62,9 +62,9 @@ function renderPanel(root) {
           <button id="adm_copynew" class="btn sm">Скопировать новые</button>
         </div>` : ""}
 
-      <h3 style="margin-top:18px">Журнал кодов (${codes.length})</h3>
+      <h3 class="adm-journal-head">Журнал кодов (${codes.length})</h3>
       ${codes.length ? `
-        <button id="adm_copyall" class="btn sm" style="margin:8px 0">Скопировать все</button>
+        <button id="adm_copyall" class="btn sm adm-copyall">Скопировать все</button>
         <div class="adm-list">
           ${codes.map((c) => `<div class="adm-row"><code>${c.code}</code><span class="adm-days">${c.days} дн.</span><span class="adm-date">${new Date(c.created).toLocaleDateString("ru-RU")}</span><button class="btn sm adm-copy" data-code="${c.code}">Копировать</button></div>`).join("")}
         </div>` : "<p class='hint'>Пока нет сгенерированных кодов.</p>"}
