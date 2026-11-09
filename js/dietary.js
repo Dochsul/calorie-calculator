@@ -71,6 +71,11 @@ export function checkProduct(productId, restrictions) {
     unknown.push({ productId, productName: p.name, reason: "Неизвестный состав ингредиентов" });
   }
 
+  // Продукты из Open Food Facts без определённых тегов требуют подтверждения
+  if (p.custom && (!p.tags || p.tags.length === 0)) {
+    unknown.push({ productId, productName: p.name, reason: "Теги не определены (Open Food Facts)" });
+  }
+
   // Теги — рекурсивный сбор с разворотом состава
   const block = blockedTags(r);
   const tags = collectTags(productId);

@@ -5,8 +5,11 @@ import { CATEGORIES, PRODUCT_MAP, getByCategory, alternatives, allowedProducts }
 import { dishTotals } from "../calc.js";
 import { dishServing, macroLine, ingList, esc } from "../ui.js";
 import { checkDish, checkProduct } from "../dietary.js";
+import { addCustomProduct } from "../data.js";
+import { searchOFF } from "../foodfacts.js";
 
 let editingId = null;
+let offResults = [];
 
 export function renderDishes(root) {
   const s = getState();
@@ -103,6 +106,14 @@ function renderEditor(root, id) {
         <input id="ai_g" type="number" min="1" value="100" style="width:90px">
         <button class="btn sm primary" id="ai_add">Добавить</button>
       </div>
+      <details class="off-section">
+        <summary>🔍 Добавить продукт из Open Food Facts</summary>
+        <div class="off-search-bar">
+          <input type="text" id="off_query" placeholder="Например: банан, творог, киноа...">
+          <button class="btn sm" id="off_search">Найти</button>
+        </div>
+        <div id="off_results" class="off-results"></div>
+      </details>
       <div class="dish-summary">
         <div class="ds-total"><b>${Math.round(t.kcal)} ккал</b> · ${macroLine(t)}</div>
         <div class="ds-mass">Сырое: ${Math.round(t.rawMass)} г → Готовое: ${Math.round(t.cookedMass)} г</div>
@@ -123,6 +134,60 @@ function renderEditor(root, id) {
   root.querySelector("#e_note").oninput = (e) => update((s) => { s.dishes.find((x) => x.id === id).note = e.target.value; });
   root.querySelector("#e_back").onclick = () => { editingId = null; renderDishes(root); };
   bindIngRows(root, id);
+  bindOFFSearch(root, id);
+}
+
+function bindOFFSearch(root, id) {
+  const searchBtn = root.querySelector("#off_search");
+  const queryInput = root.querySelector("#off_query");
+  const resultsEl = root.querySelector("#off_results");
+
+  const doSearch = async () => {
+    const q = queryInput.value.trim();
+    if (!q) return;
+    resultsEl.innerHTML = '<div class="off-loading">Поиск…</div>';
+    try {
+      const results = await searchOFF(q);
+      offResults = results;
+      resultsEl.innerHTML = results.slice(0, 20).map((p) => `
+        <div class="off-item">
+          <div class="off-info">
+            <b>${esc(p.name)}</b>
+            <span class="off-nutri">${p.kcal} ккал · Б${p.p} Ж${p.f} У${p.c} (100 г)</span>
+            ${p.tags.length ? `<span class="off-tags">теги: ${p.tags.map(tagLabel).join(", ")}</span>` : '<span class="off-tags off-no-tags">теги не определены — требуется подтверждение</span>'}
+          </div>
+          <input type="number" min="1" value="100" style="width:70px" class="off-g" data-pid="${p.id}">
+          <button class="btn sm primary" data-off-add="${p.id}">+ В блюдо</button>
+        </div>`).join("") || '<div class="off-empty">Ничего не найдено</div>';
+      bindOFFAdd(root, id);
+    } catch (e) {
+      resultsEl.innerHTML = '<div class="off-error">⚠ ' + esc(e.message) + '</div>';
+    }
+  };
+
+  searchBtn.onclick = doSearch;
+  queryInput.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } };
+}
+
+function bindOFFAdd(root, id) {
+  root.querySelectorAll("[data-off-add]").forEach((btn) => (btn.onclick = () => {
+    const pid = btn.dataset.offAdd;
+    const product = offResults.find((p) => p.id === pid);
+    if (!product) return;
+    const grams = parseFloat(root.querySelector(`.off-g[data-pid="${pid}"]`).value) || 100;
+    addCustomProduct(product);
+    update((s) => {
+      if (!s.customProducts.find((p) => p.id === pid)) s.customProducts.push(product);
+      const d = s.dishes.find((x) => x.id === id);
+      d.ingredients.push({ productId: pid, grams });
+    });
+    renderEditor(root, id);
+  }));
+}
+
+function tagLabel(tag) {
+  const labels = { meat: "мясо", poultry: "птица", fish: "рыба", seafood: "морепродукты", egg: "яйцо", dairy: "молоко", gluten: "глютен", nut: "орехи" };
+  return labels[tag] || tag;
 }
 
 function ingRow(dish, ing, i) {

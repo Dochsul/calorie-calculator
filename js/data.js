@@ -125,7 +125,22 @@ const COMPOSITE_PRODUCTS = computeCompositeProducts(COMPOSITE_RECIPES, _baseMap)
 export const PRODUCTS = [...BASE_PRODUCTS, ...COMPOSITE_PRODUCTS];
 export const PRODUCT_MAP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
 
-export const CATEGORIES = [...new Set(PRODUCTS.map((p) => p.cat))];
+export let CATEGORIES = [...new Set(PRODUCTS.map((p) => p.cat))];
+
+// Динамическое добавление продукта (например, из Open Food Facts).
+// Продукт появляется в PRODUCTS, PRODUCT_MAP и CATEGORIES.
+export function addCustomProduct(product) {
+  if (PRODUCT_MAP[product.id]) return false;
+  PRODUCTS.push(product);
+  PRODUCT_MAP[product.id] = product;
+  if (!CATEGORIES.includes(product.cat)) CATEGORIES = [...CATEGORIES, product.cat];
+  return true;
+}
+
+// Восстановление пользовательских продуктов при загрузке приложения.
+export function loadCustomProducts(products) {
+  for (const p of products || []) addCustomProduct(p);
+}
 
 export function getByCategory(cat) {
   return PRODUCTS.filter((p) => p.cat === cat);

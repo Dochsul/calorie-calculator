@@ -1,5 +1,6 @@
 // Хранилище состояния с сохранением в localStorage
 import { calcCalories } from "./calc.js";
+import { loadCustomProducts } from "./data.js";
 
 const KEY = "aina_evidence_state_v1";
 
@@ -94,6 +95,7 @@ export function defaultState() {
     dishes: defaultDishes(),
     menu: { days: [{ meals: Array.from({ length: 4 }, () => ({ dishId: null, servings: 1 })) }] },
     templates: { dishes: [], menus: [] },
+    customProducts: [],
     diary: {
       text: "Завтрак яйца жареные на слив масле. Огурец помидор хлеб\n" +
             "Обед макароны с куриной грудкой. Тушить грудку на растит масле с луком. Салат огурец помидор болгарский перец лук\n" +
@@ -128,7 +130,10 @@ function load() {
         menu: parsed.menu || base.menu,
         templates: { ...base.templates, ...(parsed.templates || {}) },
         diary: { ...base.diary, ...(parsed.diary || {}) },
+        customProducts: parsed.customProducts || base.customProducts,
       };
+      // восстановить пользовательские продукты в PRODUCT_MAP
+      loadCustomProducts(merged.customProducts);
       // согласовать число приёмов с режимом
       const n = merged.regimen.mealsPerDay;
       merged.menu.days.forEach((d) => {
