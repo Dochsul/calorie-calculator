@@ -234,7 +234,9 @@ textarea { resize: vertical; }
 }
 .shop-group h3 span { background: var(--accent-soft); color: var(--accent-d); font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 600; }
 .shop-group ul { list-style: none; padding: 0; margin: 0; }
-.shop-group li { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.shop-group li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.shop-group li .dc-dot { flex-shrink: 0; }
+.shop-group li span { flex: 1; }
 .shop-group li:last-child { border-bottom: none; }
 
 .foot { text-align: center; color: var(--muted); font-size: 12px; padding: 20px; letter-spacing: .3px; }

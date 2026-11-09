@@ -3,7 +3,16 @@ import { getState, targetCalories } from "../store.js";
 import { PRODUCT_MAP } from "../data.js";
 import { esc } from "../ui.js";
 import { exportPDF } from "../pdf.js";
-import { checkMenu, isMedical } from "../dietary.js";
+import { checkMenu, checkProduct, isMedical } from "../dietary.js";
+
+function shopDot(productId, restrictions) {
+  const c = checkProduct(productId, restrictions);
+  return c.violations.length
+    ? `<span class="dc-dot dc-dot-block" title="Нарушение: ${esc(c.violations.map((v) => v.reason).join(", "))}">●</span>`
+    : c.unknown.length
+    ? `<span class="dc-dot dc-dot-unknown" title="Неизвестный состав">●</span>`
+    : `<span class="dc-dot dc-dot-ok" title="Совместимо">●</span>`;
+}
 
 export function renderShopping(root) {
   const s = getState();
@@ -30,7 +39,7 @@ export function renderShopping(root) {
   const groups = Object.entries(byCat).map(([cat, items]) => `
     <div class="shop-group">
       <h3>${esc(cat)} <span>${items.length}</span></h3>
-      <ul>${items.sort((a, b) => b.g - a.g).map((x) => `<li><span>${esc(x.pr.name)}</span><b>${Math.round(x.g)} г</b></li>`).join("")}</ul>
+      <ul>${items.sort((a, b) => b.g - a.g).map((x) => `<li>${shopDot(x.pr.id, s.restrictions)}<span>${esc(x.pr.name)}</span><b>${Math.round(x.g)} г</b></li>`).join("")}</ul>
     </div>`).join("");
 
   const dietaryBanner = isMedical(s.restrictions)
