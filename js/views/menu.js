@@ -41,10 +41,16 @@ export function renderMenu(root) {
 
 function mealSlot(di, mi, time, planItem, meal, dish, s, target) {
   const dishOpts = s.dishes.map((d) => `<option value="${d.id}" ${meal.dishId === d.id ? "selected" : ""}>${esc(d.name)}</option>`).join("");
+  let dot = "";
   let block = "";
   if (dish) {
     const sv = dishServing(dish, meal.servings);
     const dc = checkDish(dish, s.restrictions);
+    dot = dc.blocked
+      ? `<span class="dc-dot dc-dot-block" title="Нарушение: ${esc(dc.violations.map((v) => v.reason).join(", "))}">●</span>`
+      : dc.needsConfirmation
+      ? `<span class="dc-dot dc-dot-unknown" title="Неизвестный состав">●</span>`
+      : `<span class="dc-dot dc-dot-ok" title="Совместимо">●</span>`;
     const warn = dc.blocked
       ? `<div class="slot-warn slot-warn-block">⚠ ${dc.violations.map((v) => esc(v.reason)).join(", ")}</div>`
       : dc.needsConfirmation
@@ -66,7 +72,7 @@ function mealSlot(di, mi, time, planItem, meal, dish, s, target) {
   }
   return `<div class="meal-slot">
     <div class="slot-head"><span class="slot-time">${time || ""}</span><span class="slot-name">${planItem ? planItem.name : ""}</span></div>
-    <select class="slot-dish" data-dish="${di}:${mi}"><option value="">— выбрать блюдо —</option>${dishOpts}</select>
+    <div class="slot-pick">${dot}<select class="slot-dish" data-dish="${di}:${mi}"><option value="">— выбрать блюдо —</option>${dishOpts}</select></div>
     ${block}
   </div>`;
 }

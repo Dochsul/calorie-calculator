@@ -199,7 +199,9 @@ textarea { resize: vertical; }
 .slot-head { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; }
 .slot-time { font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
 .slot-name { color: var(--muted); font-size: 13px; }
-.slot-dish { width: 100%; margin-bottom: 10px; }
+.slot-pick { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.slot-pick .dc-dot { flex-shrink: 0; }
+.slot-dish { width: 100%; }
 .slot-card .dc-ings { font-size: 12px; }
 .slot-stats { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; margin: 8px 0; }
 .slot-stats span { background: var(--soft); padding: 3px 8px; border-radius: 7px; }
