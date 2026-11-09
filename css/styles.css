@@ -250,6 +250,11 @@ textarea { resize: vertical; }
 .cp-nutri { font-size: 12px; color: var(--muted); }
 .cp-tags { font-size: 11px; color: var(--accent-d); }
 .cp-no-tags { color: #a9762f; }
+.cp-actions { display: flex; gap: 6px; }
+.cp-editing { background: var(--bg-accent, #f0f7f4); }
+.cp-edit-fields { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.cp-edit-fields label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.cp-edit-fields input { font-size: 13px; padding: 4px 6px; }
 .tpl-row .mass { color: var(--muted); font-size: 12px; margin-left: 8px; }
 .tpl-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 

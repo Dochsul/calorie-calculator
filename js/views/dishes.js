@@ -10,6 +10,7 @@ import { searchOFF } from "../foodfacts.js";
 
 let editingId = null;
 let offResults = [];
+let cpEditingId = null;
 
 export function renderDishes(root) {
   const s = getState();
@@ -18,15 +19,36 @@ export function renderDishes(root) {
   if (editingId) return renderEditor(root, editingId);
 
   const cards = s.dishes.map(dishCard).join("");
-  const customProducts = (s.customProducts || []).map((p) => `
-    <div class="cp-item">
+  const customProducts = (s.customProducts || []).map((p) => {
+    if (cpEditingId === p.id) {
+      return `<div class="cp-item cp-editing">
+        <div class="cp-info">
+          <b>${esc(p.name)}</b>
+          <div class="cp-edit-fields">
+            <label>ккал<input type="number" class="cp-e-kcal" value="${p.kcal}" min="0" style="width:70px"></label>
+            <label>Б<input type="number" class="cp-e-p" value="${p.p}" min="0" step="0.1" style="width:60px"></label>
+            <label>Ж<input type="number" class="cp-e-f" value="${p.f}" min="0" step="0.1" style="width:60px"></label>
+            <label>У<input type="number" class="cp-e-c" value="${p.c}" min="0" step="0.1" style="width:60px"></label>
+          </div>
+        </div>
+        <div class="cp-actions">
+          <button class="btn sm primary" data-cp-save="${p.id}" title="Сохранить">✓</button>
+          <button class="btn sm" data-cp-cancel title="Отмена">✕</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="cp-item">
       <div class="cp-info">
         <b>${esc(p.name)}</b>
         <span class="cp-nutri">${p.kcal} ккал · Б${p.p} Ж${p.f} У${p.c}</span>
         ${p.tags.length ? `<span class="cp-tags">${p.tags.map(tagLabel).join(", ")}</span>` : '<span class="cp-tags cp-no-tags">теги не определены</span>'}
       </div>
-      <button class="btn sm danger" data-cp-del="${p.id}" title="Удалить из базы">✕</button>
-    </div>`).join("");
+      <div class="cp-actions">
+        <button class="btn sm" data-cp-edit="${p.id}" title="Изменить КБЖУ">✎</button>
+        <button class="btn sm danger" data-cp-del="${p.id}" title="Удалить из базы">✕</button>
+      </div>
+    </div>`;
+  }).join("");
   root.innerHTML = `
     <div class="card">
       <div class="card-head">
@@ -69,6 +91,27 @@ export function renderDishes(root) {
       s.customProducts = (s.customProducts || []).filter((p) => p.id !== pid);
       s.dishes.forEach((d) => { d.ingredients = d.ingredients.filter((ing) => ing.productId !== pid); });
     });
+    renderDishes(root);
+  }));
+  root.querySelectorAll("[data-cp-edit]").forEach((b) => (b.onclick = () => {
+    cpEditingId = b.dataset.cpEdit;
+    renderDishes(root);
+  }));
+  root.querySelectorAll("[data-cp-cancel]").forEach((b) => (b.onclick = () => {
+    cpEditingId = null;
+    renderDishes(root);
+  }));
+  root.querySelectorAll("[data-cp-save]").forEach((b) => (b.onclick = () => {
+    const pid = b.dataset.cpSave;
+    const kcal = Math.round(parseFloat(root.querySelector(".cp-e-kcal")?.value) || 0);
+    const p = Math.round((parseFloat(root.querySelector(".cp-e-p")?.value) || 0) * 10) / 10;
+    const f = Math.round((parseFloat(root.querySelector(".cp-e-f")?.value) || 0) * 10) / 10;
+    const c = Math.round((parseFloat(root.querySelector(".cp-e-c")?.value) || 0) * 10) / 10;
+    update((s) => {
+      const prod = s.customProducts.find((x) => x.id === pid);
+      if (prod) { prod.kcal = kcal; prod.p = p; prod.f = f; prod.c = c; }
+    });
+    cpEditingId = null;
     renderDishes(root);
   }));
 }
