@@ -221,6 +221,8 @@ textarea { resize: vertical; }
 .tpl-row b { font: 600 15px var(--serif); }
 .tpl-row > div:first-child { display: flex; align-items: center; gap: 8px; }
 .tpl-row .dc-dot { flex-shrink: 0; }
+.rep-table td.t-left { display: flex; align-items: center; gap: 8px; }
+.rep-table td.t-left .dc-dot { flex-shrink: 0; }
 .tpl-row .mass { color: var(--muted); font-size: 12px; margin-left: 8px; }
 .tpl-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 

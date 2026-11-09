@@ -7,6 +7,16 @@ import { parseDiary, MIN_GRAMS, MAX_GRAMS, clampInputGrams } from "../parser.js"
 import { fitMeals } from "../fit.js";
 import { chartsHtml } from "../chart.js";
 import { esc } from "../ui.js";
+import { checkProduct } from "../dietary.js";
+
+function diaryDot(productId, restrictions) {
+  const c = checkProduct(productId, restrictions);
+  return c.violations.length
+    ? `<span class="dc-dot dc-dot-block" title="Нарушение: ${esc(c.violations.map((v) => v.reason).join(", "))}">●</span>`
+    : c.unknown.length
+    ? `<span class="dc-dot dc-dot-unknown" title="Неизвестный состав">●</span>`
+    : `<span class="dc-dot dc-dot-ok" title="Совместимо">●</span>`;
+}
 
 // Тестовый дневник для быстрой проверки парсера и PDF-экспорта без ручного ввода.
 // Покрывает: маркеры приёмов пищи, граммовку, меры (ч.л./ст.л./шт), штучные
@@ -142,7 +152,7 @@ function renderTables(s) {
       mKcal += n.kcal; mP += n.p; mF += n.f; mC += n.c; mCooked += n.cooked; mRaw += n.raw;
       const pr = PRODUCT_MAP[ing.productId];
       return `<tr>
-        <td class="t-left">${pr ? esc(pr.name) : "—"}</td>
+        <td class="t-left">${pr ? diaryDot(ing.productId, s.restrictions) + esc(pr.name) : "—"}</td>
         <td><input type="number" min="${MIN_GRAMS}" max="${MAX_GRAMS}" class="dg" value="${ing.grams}" data-mi="${mi}" data-ii="${ii}"></td>
         <td>${r1(n.cooked)}</td>
         <td></td>
