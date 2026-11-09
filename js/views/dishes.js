@@ -5,7 +5,7 @@ import { CATEGORIES, PRODUCT_MAP, getByCategory, alternatives, allowedProducts }
 import { dishTotals } from "../calc.js";
 import { dishServing, macroLine, ingList, esc } from "../ui.js";
 import { checkDish, checkProduct } from "../dietary.js";
-import { addCustomProduct } from "../data.js";
+import { addCustomProduct, removeCustomProduct } from "../data.js";
 import { searchOFF } from "../foodfacts.js";
 
 let editingId = null;
@@ -18,6 +18,15 @@ export function renderDishes(root) {
   if (editingId) return renderEditor(root, editingId);
 
   const cards = s.dishes.map(dishCard).join("");
+  const customProducts = (s.customProducts || []).map((p) => `
+    <div class="cp-item">
+      <div class="cp-info">
+        <b>${esc(p.name)}</b>
+        <span class="cp-nutri">${p.kcal} ккал · Б${p.p} Ж${p.f} У${p.c}</span>
+        ${p.tags.length ? `<span class="cp-tags">${p.tags.map(tagLabel).join(", ")}</span>` : '<span class="cp-tags cp-no-tags">теги не определены</span>'}
+      </div>
+      <button class="btn sm danger" data-cp-del="${p.id}" title="Удалить из базы">✕</button>
+    </div>`).join("");
   root.innerHTML = `
     <div class="card">
       <div class="card-head">
@@ -25,6 +34,11 @@ export function renderDishes(root) {
         <button class="btn primary" id="d_add">+ Новое блюдо</button>
       </div>
       <div class="dish-grid">${cards || "<p class='hint'>Пока нет блюд. Создайте первое.</p>"}</div>
+      ${customProducts ? `
+      <div class="cp-section">
+        <h3>Мои продукты из Open Food Facts</h3>
+        <div class="cp-list">${customProducts}</div>
+      </div>` : ""}
     </div>`;
 
   root.querySelector("#d_add").onclick = () => {
@@ -46,6 +60,16 @@ export function renderDishes(root) {
     const d = getState().dishes.find((x) => x.id === b.dataset.tpl);
     update((s) => s.templates.dishes.push({ id: newDishId(), name: d.name + " (шаблон)", category: d.category, ingredients: JSON.parse(JSON.stringify(d.ingredients)) }));
     alert("Шаблон блюда сохранён.");
+  }));
+  root.querySelectorAll("[data-cp-del]").forEach((b) => (b.onclick = () => {
+    if (!confirm("Удалить продукт из базы? Ингредиенты с этим продуктом будут удалены из блюд.")) return;
+    const pid = b.dataset.cpDel;
+    removeCustomProduct(pid);
+    update((s) => {
+      s.customProducts = (s.customProducts || []).filter((p) => p.id !== pid);
+      s.dishes.forEach((d) => { d.ingredients = d.ingredients.filter((ing) => ing.productId !== pid); });
+    });
+    renderDishes(root);
   }));
 }
 

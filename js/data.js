@@ -142,6 +142,16 @@ export function loadCustomProducts(products) {
   for (const p of products || []) addCustomProduct(p);
 }
 
+// Удаление пользовательского продукта (только custom: true).
+export function removeCustomProduct(id) {
+  const idx = PRODUCTS.findIndex((p) => p.id === id);
+  if (idx === -1 || !PRODUCTS[idx].custom) return false;
+  PRODUCTS.splice(idx, 1);
+  delete PRODUCT_MAP[id];
+  CATEGORIES = [...new Set(PRODUCTS.map((p) => p.cat))];
+  return true;
+}
+
 export function getByCategory(cat) {
   return PRODUCTS.filter((p) => p.cat === cat);
 }

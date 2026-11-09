@@ -241,6 +241,15 @@ textarea { resize: vertical; }
 .off-nutri { font-size: 12px; color: var(--muted); }
 .off-tags { font-size: 11px; color: var(--accent-d); }
 .off-no-tags { color: #a9762f; }
+.cp-section { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.cp-section h3 { font-size: 14px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.cp-list { display: flex; flex-direction: column; gap: 8px; }
+.cp-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 8px; }
+.cp-info { flex: 1; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.cp-info b { font-size: 14px; }
+.cp-nutri { font-size: 12px; color: var(--muted); }
+.cp-tags { font-size: 11px; color: var(--accent-d); }
+.cp-no-tags { color: #a9762f; }
 .tpl-row .mass { color: var(--muted); font-size: 12px; margin-left: 8px; }
 .tpl-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 
