@@ -54,8 +54,13 @@ function dishCard(dish) {
     : dc.needsConfirmation
     ? `<div class="dc-warn dc-warn-unknown">⚠ Неизвестный состав: требуется подтверждение</div>`
     : "";
+  const dot = dc.blocked
+    ? `<span class="dc-dot dc-dot-block" title="Нарушение ограничений">●</span>`
+    : dc.needsConfirmation
+    ? `<span class="dc-dot dc-dot-unknown" title="Неизвестный состав">●</span>`
+    : `<span class="dc-dot dc-dot-ok" title="Совместимо">●</span>`;
   return `<div class="dish-card${dc.blocked ? " dish-blocked" : ""}">
-    <div class="dc-head"><b>${esc(dish.name)}</b><span class="tag">${esc(dish.category)}</span></div>
+    <div class="dc-head"><span class="dc-title">${dot}<b>${esc(dish.name)}</b></span><span class="tag">${esc(dish.category)}</span></div>
     ${warn}
     <ul class="dc-ings">${ingList(dish, 1)}</ul>
     <div class="dc-stats">
