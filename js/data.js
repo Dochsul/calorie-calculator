@@ -131,7 +131,36 @@ export function getByCategory(cat) {
   return PRODUCTS.filter((p) => p.cat === cat);
 }
 
-// Продукты, разрешённые с учётом ограничений
+// Рекурсивный сбор тегов продукта с разворотом состава комплексных блюд,
+// соусов и вложенных рецептов до базовых ингредиентов.
+export function collectTags(productId, seen = new Set()) {
+  if (seen.has(productId)) return [];
+  const p = PRODUCT_MAP[productId];
+  if (!p) return [];
+  seen.add(productId);
+  const tags = [...(p.tags || [])];
+  if (p.composite && p.components) {
+    for (const comp of p.components) tags.push(...collectTags(comp.productId, seen));
+  }
+  return [...new Set(tags)];
+}
+
+// Рекурсивный сбор названий продукта и всех его ингредиентов (для аллергий/нелюбимого).
+export function collectNames(productId, seen = new Set()) {
+  if (seen.has(productId)) return [];
+  const p = PRODUCT_MAP[productId];
+  if (!p) return [];
+  seen.add(productId);
+  const names = [p.name.toLowerCase()];
+  if (p.composite && p.components) {
+    for (const comp of p.components) names.push(...collectNames(comp.productId, seen));
+  }
+  return [...new Set(names)];
+}
+
+// Продукты, разрешённые с учётом ограничений.
+// Рекурсивно проверяет состав комплексных блюд (включая вложенные рецепты).
+// allergies и dislikes — строки через запятую.
 export function allowedProducts(restrictions) {
   const r = restrictions || {};
   const block = new Set();
@@ -139,13 +168,14 @@ export function allowedProducts(restrictions) {
   if (r.vegan) ["meat", "poultry", "fish", "seafood", "egg", "dairy"].forEach((t) => block.add(t));
   if (r.glutenFree) block.add("gluten");
   if (r.dairyFree) block.add("dairy");
-  const allergies = (r.allergies || []).map((s) => s.trim().toLowerCase());
-  const dislikes = (r.dislikes || []).map((s) => s.trim().toLowerCase());
+  const allergies = String(r.allergies || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const dislikes = String(r.dislikes || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
   return PRODUCTS.filter((p) => {
-    if (p.tags.some((t) => block.has(t))) return false;
-    const name = p.name.toLowerCase();
-    if (allergies.some((a) => a && name.includes(a))) return false;
-    if (dislikes.some((d) => d && name.includes(d))) return false;
+    const tags = collectTags(p.id);
+    if (tags.some((t) => block.has(t))) return false;
+    const names = collectNames(p.id);
+    if (allergies.some((a) => names.some((n) => n.includes(a)))) return false;
+    if (dislikes.some((d) => names.some((n) => n.includes(d)))) return false;
     return true;
   });
 }

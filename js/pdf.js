@@ -4,6 +4,7 @@
 import { getState, targetCalories } from "./store.js";
 import { calcMacros } from "./calc.js";
 import { PRODUCT_MAP } from "./data.js";
+import { checkMenu, isMedical } from "./dietary.js";
 
 const GOALS = {
   maintain: "Поддержание веса",
@@ -315,6 +316,24 @@ export function buildPrintHtml(state) {
 
 export function exportPDF() {
   const state = getState();
+  // Блокировка PDF-экспорта при медицинских ограничениях с нарушениями
+  if (isMedical(state.restrictions)) {
+    const { violations, unknown } = checkMenu(state);
+    if (violations.length) {
+      const list = violations
+        .map((v) => `• ${v.dishName} — ${v.reason}`)
+        .join("\n");
+      alert("Экспорт в PDF запрещён:\nв меню есть блюда, нарушающие медицинские ограничения.\n\n" + list);
+      return;
+    }
+    if (unknown.length) {
+      const list = unknown
+        .map((u) => `• ${u.dishName} — ${u.reason}`)
+        .join("\n");
+      alert("Экспорт в PDF запрещён:\nв меню есть блюда с неизвестным составом.\nПодтвердите безопасность ингредиентов в редакторе блюд.\n\n" + list);
+      return;
+    }
+  }
   const html = buildPrintHtml(state);
   const w = window.open("", "_blank");
   if (!w) {

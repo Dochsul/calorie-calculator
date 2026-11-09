@@ -4,6 +4,7 @@ import { getState, update, targetCalories } from "../store.js";
 import { mealPlan, mealTimes, dishTotals } from "../calc.js";
 import { allowedProducts } from "../data.js";
 import { dishServing, macroLine, ingList, progress, esc } from "../ui.js";
+import { checkDish } from "../dietary.js";
 
 const dayNames = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"];
 
@@ -43,8 +44,15 @@ function mealSlot(di, mi, time, planItem, meal, dish, s, target) {
   let block = "";
   if (dish) {
     const sv = dishServing(dish, meal.servings);
+    const dc = checkDish(dish, s.restrictions);
+    const warn = dc.blocked
+      ? `<div class="slot-warn slot-warn-block">⚠ ${dc.violations.map((v) => esc(v.reason)).join(", ")}</div>`
+      : dc.needsConfirmation
+      ? `<div class="slot-warn slot-warn-unknown">⚠ Неизвестный состав: требуется подтверждение</div>`
+      : "";
     block = `
-      <div class="slot-card">
+      <div class="slot-card${dc.blocked ? " slot-blocked" : ""}">
+        ${warn}
         <ul class="dc-ings">${ingList(dish, meal.servings)}</ul>
         <div class="slot-stats">
           <span>${Math.round(sv.kcal)} / ${target} ккал</span>

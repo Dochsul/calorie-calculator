@@ -4,6 +4,7 @@ import { getState, update, newDishId } from "../store.js";
 import { CATEGORIES, PRODUCT_MAP, getByCategory, alternatives, allowedProducts } from "../data.js";
 import { dishTotals } from "../calc.js";
 import { dishServing, macroLine, ingList, esc } from "../ui.js";
+import { checkDish, checkProduct } from "../dietary.js";
 
 let editingId = null;
 
@@ -47,8 +48,15 @@ export function renderDishes(root) {
 
 function dishCard(dish) {
   const t = dishTotals(dish);
-  return `<div class="dish-card">
+  const dc = checkDish(dish, getState().restrictions);
+  const warn = dc.blocked
+    ? `<div class="dc-warn dc-warn-block">⚠ Нарушение: ${dc.violations.map((v) => esc(v.reason)).join(", ")}</div>`
+    : dc.needsConfirmation
+    ? `<div class="dc-warn dc-warn-unknown">⚠ Неизвестный состав: требуется подтверждение</div>`
+    : "";
+  return `<div class="dish-card${dc.blocked ? " dish-blocked" : ""}">
     <div class="dc-head"><b>${esc(dish.name)}</b><span class="tag">${esc(dish.category)}</span></div>
+    ${warn}
     <ul class="dc-ings">${ingList(dish, 1)}</ul>
     <div class="dc-stats">
       <span>${Math.round(t.kcal)} ккал</span>
@@ -118,12 +126,14 @@ function ingRow(dish, ing, i) {
   const g = parseFloat(ing.grams) || 0;
   const cooked = Math.round(g * pr.yield);
   const alts = alternatives(ing.productId);
+  const dc = checkProductRow(ing, i);
   return `<div class="ing-row" data-i="${i}">
     <div class="ing-main">
       <b>${esc(pr.name)}</b>
       <span class="cat">${esc(pr.cat)}</span>
       <span class="mass">${g} г ${pr.yield !== 1 ? `→ ${cooked} г гот.` : ""}</span>
     </div>
+    ${dc}
     <div class="ing-nutri">${Math.round((pr.kcal * g) / 100)} ккал · Б${Math.round((pr.p * g) / 100)} Ж${Math.round((pr.f * g) / 100)} У${Math.round((pr.c * g) / 100)}</div>
     <div class="ing-ctrl">
       <input type="number" min="1" class="ig" value="${g}" style="width:80px" data-g="${ing.productId}">
@@ -133,6 +143,23 @@ function ingRow(dish, ing, i) {
     </div>
     <div class="sub-box" data-sub-box="${ing.productId}" hidden></div>
   </div>`;
+}
+
+// Строка предупреждения о нарушении/неизвестном составе для одного ингредиента.
+function checkProductRow(ing, i) {
+  const r = getState().restrictions;
+  const check = checkProduct(ing.productId, r);
+  if (check.violations.length) {
+    return `<div class="ing-warn ing-warn-block">⚠ ${check.violations.map((v) => esc(v.reason)).join(", ")}</div>`;
+  }
+  if (check.unknown.length && !ing.confirmedSafe) {
+    return `<div class="ing-warn ing-warn-unknown">⚠ Неизвестный состав
+      <button class="btn sm" data-confirm="${i}">Подтвердить безопасность</button></div>`;
+  }
+  if (ing.confirmedSafe) {
+    return `<div class="ing-warn ing-warn-confirmed">✓ Безопасность подтверждена</div>`;
+  }
+  return "";
 }
 
 function bindIngRows(root, id) {
@@ -156,6 +183,11 @@ function bindIngRows(root, id) {
   }));
   root.querySelectorAll("[data-sub]").forEach((b) => (b.onclick = () => toggleSub(root, id, b.dataset.sub, "sub")));
   root.querySelectorAll("[data-cmp]").forEach((b) => (b.onclick = () => toggleSub(root, id, b.dataset.cmp, "cmp")));
+  root.querySelectorAll("[data-confirm]").forEach((b) => (b.onclick = () => {
+    const i = parseInt(b.dataset.confirm, 10);
+    update((s) => { const d = s.dishes.find((x) => x.id === id); if (d.ingredients[i]) d.ingredients[i].confirmedSafe = true; });
+    renderEditor(root, id);
+  }));
 }
 
 function toggleSub(root, id, pid, mode) {

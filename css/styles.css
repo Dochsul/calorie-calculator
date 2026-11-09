@@ -136,6 +136,22 @@ textarea { resize: vertical; }
 .dc-stats span { background: var(--soft); padding: 4px 9px; border-radius: 7px; color: var(--ink); }
 .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
+/* — Предупреждения о пищевых ограничениях — */
+.dish-blocked { border-color: var(--danger-border); }
+.dc-warn, .ing-warn, .slot-warn {
+  font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; margin: 4px 0;
+}
+.dc-warn-block, .ing-warn-block, .slot-warn-block {
+  background: var(--danger-hover-bg); color: var(--danger); border: 1px solid var(--danger-border);
+}
+.dc-warn-unknown, .ing-warn-unknown, .slot-warn-unknown {
+  background: var(--accent-soft); color: var(--accent-d); border: 1px solid var(--summary-border);
+}
+.ing-warn-unknown { display: flex; gap: 8px; align-items: center; }
+.ing-warn-unknown .btn { margin-left: auto; }
+.ing-warn-confirmed { color: var(--ok); background: transparent; border: none; padding: 2px 0; }
+.slot-blocked { border-color: var(--danger-border); }
+
 .btn {
   padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 600;
   border: 1px solid var(--line); background: var(--surface); color: var(--ink);
