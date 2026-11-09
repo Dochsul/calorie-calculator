@@ -102,6 +102,7 @@ export function defaultState() {
       meals: [],
       date: "",
       history: [],
+      savedDays: {},
     },
   };
 }

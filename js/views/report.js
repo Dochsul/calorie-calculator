@@ -84,6 +84,10 @@ export function renderReport(root) {
   const s = getState();
   const d = s.diary;
   const hasMeals = d.meals && d.meals.length;
+  const savedDates = Object.keys(d.savedDays || {}).sort();
+  const savedHtml = savedDates.length
+    ? `<div class="rep-saved"><span class="rep-saved-label">Сохранённые дни:</span>${savedDates.map((dt) => `<button class="btn sm rep-saved-day${dt === d.date ? " active" : ""}" data-load="${dt}">${dt}</button>`).join("")}</div>`
+    : "";
 
   root.innerHTML = `
     <section class="card rep-card">
@@ -102,6 +106,7 @@ export function renderReport(root) {
           ${hasMeals ? '<button class="btn" id="diary_save">Сохранить день в историю</button>' : ""}
           ${hasMeals ? '<span class="hint">Граммы можно править прямо в таблице — итоги пересчитаются.</span>' : ""}
         </div>
+        ${savedHtml}
       </div>
       ${hasMeals ? renderTables(s) : '<div class="rep-empty">Нажмите «Составить таблицу», чтобы распарсить текст.</div>'}
     </section>`;
@@ -125,7 +130,8 @@ export function renderReport(root) {
     renderReport(root);
   };
   const dateEl = root.querySelector("#diary_date");
-  if (dateEl) dateEl.onchange = (e) => update((st) => (st.diary.date = e.target.value));
+  if (dateEl) dateEl.onchange = (e) => loadDay(root, e.target.value);
+  root.querySelectorAll("[data-load]").forEach((b) => (b.onclick = () => loadDay(root, b.dataset.load)));
   const saveEl = root.querySelector("#diary_save");
   if (saveEl) saveEl.onclick = () => {
     const st = getState();
@@ -137,10 +143,21 @@ export function renderReport(root) {
       const entry = { date, kcal: t.kcal, p: t.p, f: t.f, c: t.c };
       if (i >= 0) h[i] = entry; else h.push(entry);
       h.sort((a, b) => (a.date < b.date ? -1 : 1));
+      s.diary.savedDays[date] = { text: st.diary.text, meals: st.diary.meals };
     });
     renderReport(root);
   };
   if (hasMeals) bindTables(root);
+}
+
+function loadDay(root, date) {
+  const saved = getState().diary.savedDays[date];
+  if (saved) {
+    update((s) => { s.diary.text = saved.text; s.diary.meals = saved.meals; s.diary.date = date; });
+  } else {
+    update((s) => { s.diary.date = date; });
+  }
+  renderReport(root);
 }
 
 function renderTables(s) {
