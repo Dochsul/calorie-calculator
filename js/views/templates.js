@@ -1,6 +1,16 @@
 // Вкладка «Шаблоны»: сохранённые шаблоны блюд и меню, применение к меню.
 import { getState, update, newDishId } from "../store.js";
 import { esc } from "../ui.js";
+import { checkDish } from "../dietary.js";
+
+function tplDot(dish, restrictions) {
+  const dc = checkDish(dish, restrictions);
+  return dc.blocked
+    ? `<span class="dc-dot dc-dot-block" title="Нарушение: ${esc(dc.violations.map((v) => v.reason).join(", "))}">●</span>`
+    : dc.needsConfirmation
+    ? `<span class="dc-dot dc-dot-unknown" title="Неизвестный состав">●</span>`
+    : `<span class="dc-dot dc-dot-ok" title="Совместимо">●</span>`;
+}
 
 export function renderTemplates(root) {
   const s = getState();
@@ -9,7 +19,7 @@ export function renderTemplates(root) {
 
   const dishTpl = dt.length
     ? dt.map((d) => `<div class="tpl-row">
-        <div><b>${esc(d.name)}</b> <span class="tag">${esc(d.category)}</span>
+        <div>${tplDot(d, s.restrictions)}<b>${esc(d.name)}</b> <span class="tag">${esc(d.category)}</span>
           <span class="mass">${(d.ingredients || []).length} ингр.</span></div>
         <div class="tpl-actions">
           <button class="btn sm primary" data-add-dish="${d.id}">Добавить в блюда</button>
