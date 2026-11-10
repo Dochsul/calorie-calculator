@@ -60,6 +60,13 @@ body {
 
 .container { max-width: 960px; margin: 0 auto; padding: 0 16px 44px; }
 
+/* — Описание активной вкладки — */
+.tab-desc {
+  max-width: 960px; margin: 8px auto 0; padding: 0 16px;
+  font-size: 13px; color: var(--muted); text-align: center;
+  letter-spacing: .2px;
+}
+
 /* — Карточки — */
 .card {
   background: var(--card); border: 1px solid var(--line);

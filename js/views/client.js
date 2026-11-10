@@ -93,6 +93,7 @@ export function renderClient(root) {
 
   <section class="card result-card">
     <h2>Индивидуальный расчёт</h2>
+    <div class="hint" style="margin: -8px 0 14px">⚡ Калории и БЖУ считаются автоматически из данных выше. Измените вес, рост или цель — расчёт обновится.</div>
     <div class="metrics">
       <div class="metric big"><span>Калории</span><b>${Math.round(cal).toLocaleString("ru-RU")} ккал</b></div>
       <div class="metric"><span>Белки</span><b>${Math.round(macros.proteins)} г</b></div>

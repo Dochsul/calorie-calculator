@@ -82,18 +82,18 @@ export function renderReport(root) {
         <div class="rep-goal">~${targetCalories().toLocaleString("ru-RU")} ккал</div>
       </div>
       <div class="rep-input">
-        <label>Что съел клиент сегодня (свободным текстом)</label>
-        <textarea id="diary_text" rows="6">${esc(d.text)}</textarea>
+        <label>🍽 Опишите что на тарелке — текстом, без весов</label>
+        <textarea id="diary_text" rows="6" placeholder="Например:&#10;Завтрак: овсянка 60 г, молоко, ягоды, мёд 1 ч.л., яйцо 1 шт&#10;Обед: гречка, куриная грудка 150 г, салат огурец помидор&#10;Ужин: лосось 150 г, брокколи, рис&#10;Перекус: творог 5%, банан, миндаль 15 г&#10;&#10;Можно без граммовки — кнопка ниже подберёт вес под цель автоматически.">${esc(d.text)}</textarea>
         <div class="rep-actions">
           <label class="rep-date">Дата <input type="date" id="diary_date" value="${d.date || todayStr()}"></label>
-          <button class="btn" id="diary_demo" title="Заполнить примером и распарсить">Вставить тестовый дневник</button>
-          <button class="btn" id="diary_parse">Составить таблицу</button>
-          <button class="btn primary" id="diary_fit" title="Если веса не указаны — подберёт граммовку под калорийность клиента">Составить и подобрать граммовку под цель</button>
-          ${hasMeals ? '<button class="btn" id="diary_save">Сохранить день в историю</button>' : ""}
-          ${hasMeals ? '<span class="hint">Граммы можно править прямо в таблице — итоги пересчитаются.</span>' : ""}
+          <button class="btn" id="diary_demo" title="Заполнить примером и распарсить">Пример</button>
+          <button class="btn" id="diary_parse" title="Разобрать текст в таблицу КБЖУ">📊 Составить таблицу</button>
+          <button class="btn primary" id="diary_fit" title="Без весов — подберёт граммовку под калорийность клиента">✨ Составить и подобрать вес под цель</button>
+          ${hasMeals ? '<button class="btn" id="diary_save">💾 Сохранить день</button>' : ""}
         </div>
+        ${hasMeals ? '<div class="hint">✏️ Граммы можно править прямо в таблице — итоги пересчитаются. ✕ — удалить продукт.</div>' : '<div class="hint">Напишите что ел клиент, нажмите «Составить таблицу» — получите разбивку по КБЖУ.</div>'}
       </div>
-      ${hasMeals ? renderTables(s) : '<div class="rep-empty">Нажмите «Составить таблицу», чтобы распарсить текст.</div>'}
+      ${hasMeals ? renderTables(s) : '<div class="rep-empty">Нажмите «Составить таблицу», чтобы получить разбивку КБЖУ.</div>'}
     </section>`;
 
   root.querySelector("#diary_text").oninput = (e) => update((st) => (st.diary.text = e.target.value));

@@ -20,6 +20,7 @@ export function renderDishes(root) {
         <h2>Блюда</h2>
         <button class="btn primary" id="d_add">+ Новое блюдо</button>
       </div>
+      <div class="hint" style="margin: -4px 0 14px">Добавьте продукты и укажите вес — калории и БЖУ рассчитаются автоматически. Можно сравнивать и заменять ингредиенты.</div>
       <div class="dish-grid">${cards || "<p class='hint'>Пока нет блюд. Создайте первое.</p>"}</div>
     </div>`;
 
