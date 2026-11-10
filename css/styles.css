@@ -293,12 +293,44 @@ body, .topbar, .card, .tab, .btn, input, select, textarea,
 @media (max-width: 720px) {
   .grid2, .dish-grid, .meals, .shop-grid, .metrics { grid-template-columns: 1fr; }
   .row2 { grid-template-columns: 1fr 1fr; }
-  .tabs { gap: 2px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
-  .tab { padding: 8px 13px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+  /* — Закреплённая шапка с вкладками — всегда доступны при прокрутке — */
+  .topbar { position: sticky; top: 0; z-index: 50; padding: 10px 12px 8px; }
+  .brand { font-size: 18px; }
+  .brand .mark { width: 26px; height: 26px; font-size: 13px; }
+  .subtitle { font-size: 9px; letter-spacing: 1.6px; margin-top: 2px; }
+  .theme-toggle { width: 34px; height: 34px; top: 10px; right: 10px; font-size: 16px; }
+  .tabs { position: sticky; top: 56px; z-index: 49; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
+    justify-content: flex-start; padding: 6px 12px; -webkit-overflow-scrolling: touch;
+    background: var(--bg); }
+  .tab { padding: 10px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; min-height: 40px;
+    display: inline-flex; align-items: center; }
+  .tab-desc { position: sticky; top: 100px; z-index: 48; background: var(--bg); padding: 6px 16px 4px;
+    margin: 0; font-size: 12px; }
+
   .metric.big b { font-size: 26px; }
   .charts { grid-template-columns: 1fr; gap: 10px; margin: 0 16px 14px; }
   .chart-block { padding: 10px; }
-  .card { padding: 18px; }
+  .card { padding: 14px; }
+  .container { padding: 0 10px 44px; }
+
+  /* — Кнопки на всю ширину в вертикальных группах — */
+  .rep-actions { flex-direction: column; align-items: stretch; gap: 8px; }
+  .rep-actions .btn { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .rep-actions .rep-date { width: 100%; }
+  .rep-actions .rep-date input { width: 100%; }
+  .rep-actions .hint { text-align: center; }
+
+  /* — Карточки блюд и слоты — компактнее на мобильном — */
+  .dc-actions .btn, .tpl-actions .btn { min-height: 40px; flex: 1; text-align: center; }
+  .ing-ctrl .btn { min-height: 40px; }
+
+  /* — Селект выбора блюда в меню — крупнее — */
+  .slot-dish { min-height: 44px; }
+
+  /* — Поля ввода — крупнее для касания — */
+  input, select, textarea { min-height: 44px; }
+  .row2 input, .row2 select { min-height: 40px; }
 }
 
 /* — Шлюз оплаты и панель администратора — */
