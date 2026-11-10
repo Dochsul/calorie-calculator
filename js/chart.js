@@ -85,6 +85,39 @@ export function macroChart(history, goalMacros) {
   return svgWrap("БЖУ по дням, г", g) + legend;
 }
 
+// Круговая диаграмма КБЖУ (donut) — показывает долю калорий из белков, жиров и углеводов
+export function macroPie(macros, calories) {
+  const p = macros.proteins * 4;   // ккал из белков
+  const f = macros.fats * 9;       // ккал из жиров
+  const c = macros.carbs * 4;     // ккал из углеводов
+  const total = p + f + c || 1;
+  const r = 70, sw = 28, circ = 2 * Math.PI * r;
+
+  const segs = [
+    { val: p, cls: "protein", label: "Белки", grams: macros.proteins },
+    { val: f, cls: "fat", label: "Жиры", grams: macros.fats },
+    { val: c, cls: "carb", label: "Углеводы", grams: macros.carbs },
+  ];
+  let offset = 0;
+  let arcs = "";
+  for (const s of segs) {
+    const len = (s.val / total) * circ;
+    arcs += `<circle class="pie-${s.cls}" cx="100" cy="100" r="${r}" fill="none"
+      stroke-width="${sw}" stroke-dasharray="${len.toFixed(1)} ${(circ - len).toFixed(1)}"
+      stroke-dashoffset="${(-offset).toFixed(1)}" transform="rotate(-90 100 100)"/>`;
+    offset += len;
+  }
+  return `<div class="macro-pie">
+    <svg viewBox="0 0 200 200" class="pie-svg">${arcs}
+      <text x="100" y="93" text-anchor="middle" class="pie-center-val">${Math.round(calories).toLocaleString("ru-RU")}</text>
+      <text x="100" y="112" text-anchor="middle" class="pie-center-lbl">ккал</text>
+    </svg>
+    <div class="pie-legend">
+      ${segs.map((s) => `<span class="pie-lg-item"><i class="pie-sw pie-${s.cls}"></i>${s.label} <b>${Math.round(s.grams)} г</b></span>`).join("")}
+    </div>
+  </div>`;
+}
+
 export function chartsHtml(history, goalKcal, goalMacros) {
   if (!history.length) return "";
   return `<div class="charts">${kcalChart(history, goalKcal)}${macroChart(history, goalMacros)}</div>`;

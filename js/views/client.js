@@ -1,6 +1,7 @@
 // Вкладка «Анкета»: данные клиента, расчёт калорий/БЖУ, режим питания, ограничения
 import { getState, update, targetCalories } from "../store.js";
 import { calcCalories, calcMacros, mealPlan, mealTimes } from "../calc.js";
+import { macroPie } from "../chart.js";
 
 const GOALS = {
   maintain: "Поддержание веса",
@@ -100,6 +101,7 @@ export function renderClient(root) {
       <div class="metric"><span>Жиры</span><b>${Math.round(macros.fats)} г</b></div>
       <div class="metric"><span>Углеводы</span><b>${Math.round(macros.carbs)} г</b></div>
     </div>
+    ${macroPie(macros, cal)}
     ${c.goal === "lose20" ? '<div class="hint">Применён дефицит 20%.</div>' : ""}
     <div class="plan">
       <h3>Распределение по приёмам пищи</h3>
@@ -136,6 +138,12 @@ function bind(root) {
     if (planEl) {
       planEl.innerHTML = `<h3>Распределение по приёмам пищи</h3>` +
         plan.map((m, i) => `<div class="plan-row"><span class="t">${times[i]}</span><span class="n">${m.name}</span><b>${m.kcal} ккал</b></div>`).join("");
+    }
+
+    // Обновляем круговую диаграмму
+    const pieEl = root.querySelector(".macro-pie");
+    if (pieEl) {
+      pieEl.outerHTML = macroPie(macros, cal);
     }
 
     const deficitHint = root.querySelector(".result-card .hint:last-of-type");

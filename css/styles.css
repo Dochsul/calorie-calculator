@@ -287,6 +287,22 @@ body, .topbar, .card, .tab, .btn, input, select, textarea,
 .chart-svg { width: 100%; height: auto; display: block; }
 .chart-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; margin-top: 6px; color: var(--ink); }
 .chart-legend .hint { color: var(--muted); }
+
+/* — Круговая диаграмма КБЖУ — */
+.macro-pie { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.pie-svg { width: 180px; height: 180px; flex-shrink: 0; }
+.pie-svg .pie-protein { stroke: var(--chart-protein); }
+.pie-svg .pie-fat { stroke: var(--chart-fat); }
+.pie-svg .pie-carb { stroke: var(--chart-carb); }
+.pie-center-val { font: 700 22px var(--sans); fill: var(--ink); }
+.pie-center-lbl { font: 500 11px var(--sans); fill: var(--muted); }
+.pie-legend { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--ink); }
+.pie-lg-item { display: flex; align-items: center; gap: 8px; }
+.pie-sw { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+.pie-sw.pie-protein { background: var(--chart-protein); }
+.pie-sw.pie-fat { background: var(--chart-fat); }
+.pie-sw.pie-carb { background: var(--chart-carb); }
+.pie-lg-item b { font-weight: 600; }
 .lg-item { display: inline-flex; align-items: center; gap: 5px; }
 .lg-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
 
