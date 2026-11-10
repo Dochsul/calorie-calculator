@@ -116,12 +116,39 @@ function bind(root) {
   const setRestr = (patch) => update((s) => Object.assign(s.restrictions, patch));
 
   const rebind = () => renderClient(root);
+  // Обновляем только секцию расчёта без перерисовки формы — фокус ввода сохраняется
+  const refreshCalc = () => {
+    const s = getState();
+    const cal = targetCalories();
+    const macros = calcMacros(cal);
+    const r = s.regimen;
+    const plan = mealPlan(r.mealsPerDay, cal);
+    const times = mealTimes(r.firstMealTime, r.mealsPerDay, r.intervalHours);
+
+    const calEl = root.querySelector(".metric.big b");
+    if (calEl) calEl.textContent = `${Math.round(cal).toLocaleString("ru-RU")} ккал`;
+    const metricEls = root.querySelectorAll(".metric:not(.big) b");
+    if (metricEls[0]) metricEls[0].textContent = `${Math.round(macros.proteins)} г`;
+    if (metricEls[1]) metricEls[1].textContent = `${Math.round(macros.fats)} г`;
+    if (metricEls[2]) metricEls[2].textContent = `${Math.round(macros.carbs)} г`;
+
+    const planEl = root.querySelector(".plan");
+    if (planEl) {
+      planEl.innerHTML = `<h3>Распределение по приёмам пищи</h3>` +
+        plan.map((m, i) => `<div class="plan-row"><span class="t">${times[i]}</span><span class="n">${m.name}</span><b>${m.kcal} ккал</b></div>`).join("");
+    }
+
+    const deficitHint = root.querySelector(".result-card .hint:last-of-type");
+    if (deficitHint) {
+      deficitHint.textContent = s.client.goal === "lose20" ? "Применён дефицит 20%." : "";
+    }
+  };
 
   num("c_name").oninput = (e) => setClient({ name: e.target.value });
   num("c_gender").onchange = (e) => { setClient({ gender: e.target.value }); rebind(); };
-  num("c_age").oninput = (e) => setClient({ age: parseFloat(e.target.value) || 0 });
-  num("c_weight").oninput = (e) => setClient({ weight: parseFloat(e.target.value) || 0 });
-  num("c_height").oninput = (e) => setClient({ height: parseFloat(e.target.value) || 0 });
+  num("c_age").oninput = (e) => { setClient({ age: parseFloat(e.target.value) || 0 }); refreshCalc(); };
+  num("c_weight").oninput = (e) => { setClient({ weight: parseFloat(e.target.value) || 0 }); refreshCalc(); };
+  num("c_height").oninput = (e) => { setClient({ height: parseFloat(e.target.value) || 0 }); refreshCalc(); };
   num("c_formula").onchange = (e) => { setClient({ formula: e.target.value }); rebind(); };
   num("c_goal").onchange = (e) => { setClient({ goal: e.target.value }); rebind(); };
   num("c_activity").onchange = (e) => { setClient({ activity: e.target.value }); rebind(); };
