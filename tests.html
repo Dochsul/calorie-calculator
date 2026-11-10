@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тесты — Aina Évidence</title>
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script>(function(){var t=localStorage.getItem('aina-theme')||'light';document.documentElement.dataset.theme=t;})();</script>
+  <style>
+    .test-page { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+    .test-summary { display: flex; gap: 16px; align-items: center; margin: 16px 0; flex-wrap: wrap; }
+    .test-badge { font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 8px; }
+    .test-badge.pass { background: #1f4d3f22; color: var(--accent, #1f4d3f); }
+    .test-badge.fail { background: #c0392b22; color: #c0392b; }
+    .test-badge.total { background: var(--bg-elev, #eee); color: var(--text, #333); }
+    .test-list { list-style: none; padding: 0; margin: 0; }
+    .test-item { padding: 10px 14px; border-bottom: 1px solid var(--border, #e0d8cc); display: flex; align-items: flex-start; gap: 10px; }
+    .test-item.pass { color: var(--text, #333); }
+    .test-item.fail { color: #c0392b; background: #c0392b08; }
+    .test-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+    .test-name { font-size: 14px; line-height: 1.4; }
+    .test-error { font-family: monospace; font-size: 12px; margin-top: 6px; color: #c0392b; white-space: pre-wrap; padding-left: 28px; width: 100%; }
+    .test-section { font-weight: 700; font-size: 13px; color: var(--text-muted, #888); text-transform: uppercase; letter-spacing: .05em; padding: 14px 14px 6px; }
+    .test-runner { font-size: 14px; color: var(--text-muted, #888); margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="mark">A</span>Aina <em>Évidence</em></div>
+    <div class="subtitle">Результаты unit-тестов</div>
+  </header>
+  <main class="test-page">
+    <div class="test-runner" id="runner-status">Запуск тестов…</div>
+    <div class="test-summary" id="summary"></div>
+    <div id="results"></div>
+  </main>
+
+  <script type="module">
+    import { calcCalories, calcMacros, mealPlan, mealTimes, dishTotals, round, fmt } from "./js/calc.js";
+    import { kcalChart, chartsHtml } from "./js/chart.js";
+
+    // ── Минимальный тест-раннер для браузера ──────────────────────────
+    const results = [];
+    let currentSection = "";
+
+    function section(name) { currentSection = name; }
+
+    function assertEqual(actual, expected, msg) {
+      if (actual !== expected) throw new Error(`${msg || ""}\n  expected: ${expected}\n  actual:   ${actual}`);
+    }
+    function assertDeepEqual(actual, expected, msg) {
+      const a = JSON.stringify(actual), e = JSON.stringify(expected);
+      if (a !== e) throw new Error(`${msg || ""}\n  expected: ${e}\n  actual:   ${a}`);
+    }
+    function assertOk(val, msg) {
+      if (!val) throw new Error(msg || "expected truthy");
+    }
+    function assertMatch(str, regex, msg) {
+      if (!regex.test(str)) throw new Error(`${msg || ""}\n  string: ${str}\n  regex:  ${regex}`);
+    }
+
+    function test(name, fn) {
+      try { fn(); results.push({ name, pass: true, section: currentSection }); }
+      catch (e) { results.push({ name, pass: false, section: currentSection, error: e.message }); }
+    }
+
+    // ── Тесты: calcCalories ──────────────────────────────────────────
+    section("calcCalories: Mifflin-St Jeor");
+    test("Mifflin male base value", () => {
+      const c = calcCalories({ gender: "male", weight: 80, height: 180, age: 30, activity: 1.2 });
+      assertEqual(c, 1780 * 1.2);
+    });
+    test("Mifflin female base value", () => {
+      const c = calcCalories({ gender: "female", weight: 60, height: 165, age: 25, activity: 1.2 });
+      assertEqual(c, 1345.25 * 1.2);
+    });
+
+    section("calcCalories: Harris-Benedict");
+    test("Harris-Benedict male", () => {
+      const c = calcCalories({ gender: "male", weight: 80, height: 180, age: 30, activity: 1.2, formula: "harris" });
+      assertEqual(c, 1853.36 * 1.2);
+    });
+    test("Harris-Benedict female", () => {
+      const c = calcCalories({ gender: "female", weight: 60, height: 165, age: 25, activity: 1.2, formula: "harris" });
+      assertEqual(c, 1403.6 * 1.2);
+    });
+
+    section("calcCalories: activity & defaults");
+    test("activity multiplier scales linearly", () => {
+      const base = { gender: "male", weight: 80, height: 180, age: 30 };
+      const sedentary = calcCalories({ ...base, activity: 1.2 });
+      const active = calcCalories({ ...base, activity: 1.55 });
+      assertOk(active > sedentary);
+      assertEqual(active / sedentary, 1.55 / 1.2);
+    });
+    test("defaults to activity 1.2 when missing", () => {
+      assertEqual(calcCalories({ gender: "male", weight: 80, height: 180, age: 30 }), 1780 * 1.2);
+    });
+
+    section("calcCalories: pregnancy / breastfeeding / cycle");
+    test("pregnancy adds 300 kcal", () => {
+      const base = { gender: "female", weight: 60, height: 165, age: 25, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, pregnancy: true }), calcCalories(base) + 300);
+    });
+    test("breastfeeding adds 500 kcal", () => {
+      const base = { gender: "female", weight: 60, height: 165, age: 25, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, breastfeeding: true }), calcCalories(base) + 500);
+    });
+    test("menstrual cycle adds 100 kcal", () => {
+      const base = { gender: "female", weight: 60, height: 165, age: 25, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, cycle: true }), calcCalories(base) + 100);
+    });
+    test("pregnancy + breastfeeding stack", () => {
+      const base = { gender: "female", weight: 60, height: 165, age: 25, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, pregnancy: true, breastfeeding: true, cycle: true }), calcCalories(base) + 300 + 500 + 100);
+    });
+
+    section("calcCalories: goal adjustments");
+    test("lose20 multiplies by 0.8", () => {
+      const base = { gender: "male", weight: 80, height: 180, age: 30, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, goal: "lose20" }), calcCalories(base) * 0.8);
+    });
+    test("lose15 multiplies by 0.85", () => {
+      const base = { gender: "male", weight: 80, height: 180, age: 30, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, goal: "lose15" }), calcCalories(base) * 0.85);
+    });
+    test("muscleGain multiplies by 1.15", () => {
+      const base = { gender: "male", weight: 80, height: 180, age: 30, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, goal: "muscleGain" }), calcCalories(base) * 1.15);
+    });
+    test("no goal leaves calories unchanged", () => {
+      const base = { gender: "male", weight: 80, height: 180, age: 30, activity: 1.2 };
+      assertEqual(calcCalories({ ...base, goal: "maintain" }), calcCalories(base));
+    });
+
+    section("calcCalories: child tiers");
+    test("infant = 800 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "infant", activity: 1.2 }), 800 * 1.2);
+    });
+    test("toddler = 1200 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "toddler", activity: 1.2 }), 1200 * 1.2);
+    });
+    test("child4_8 = 1600 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "child4_8", activity: 1.2 }), 1600 * 1.2);
+    });
+    test("child9_13 male = 1800 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "child9_13", gender: "male", activity: 1.2 }), 1800 * 1.2);
+    });
+    test("child9_13 female = 1600 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "child9_13", gender: "female", activity: 1.2 }), 1600 * 1.2);
+    });
+    test("teen14_18 male = 2400 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "teen14_18", gender: "male", activity: 1.2 }), 2400 * 1.2);
+    });
+    test("teen14_18 female = 2000 * activity", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "teen14_18", gender: "female", activity: 1.2 }), 2000 * 1.2);
+    });
+    test("unknown child age group defaults to 1600", () => {
+      assertEqual(calcCalories({ isChild: true, childAgeGroup: "unknown", activity: 1.2 }), 1600 * 1.2);
+    });
+    test("child goals/pregnancy modifiers NOT applied", () => {
+      const child = calcCalories({ isChild: true, childAgeGroup: "toddler", activity: 1.2 });
+      const childWithGoal = calcCalories({ isChild: true, childAgeGroup: "toddler", activity: 1.2, goal: "lose20", pregnancy: true });
+      assertEqual(child, childWithGoal);
+    });
+
+    section("calcCalories: edge cases");
+    test("null client returns 0 for adult path", () => {
+      assertEqual(calcCalories(null), -161 * 1.2);
+    });
+    test("string numeric inputs are parsed", () => {
+      const c = calcCalories({ gender: "male", weight: "80", height: "180", age: "30", activity: "1.2" });
+      assertEqual(c, 1780 * 1.2);
+    });
+
+    // ── Тесты: calcMacros ────────────────────────────────────────────
+    section("calcMacros: 30/30/40 split");
+    test("returns proteins/fats/carbs keys", () => {
+      const m = calcMacros(2000);
+      assertDeepEqual(Object.keys(m).sort(), ["carbs", "fats", "proteins"]);
+    });
+    test("2000 kcal → 150g protein, 67g fat, 200g carbs", () => {
+      const m = calcMacros(2000);
+      assertEqual(m.proteins, (2000 * 0.3) / 4);
+      assertEqual(m.fats, (2000 * 0.3) / 9);
+      assertEqual(m.carbs, (2000 * 0.4) / 4);
+    });
+    test("0 kcal → all zeros", () => {
+      const m = calcMacros(0);
+      assertEqual(m.proteins, 0);
+      assertEqual(m.fats, 0);
+      assertEqual(m.carbs, 0);
+    });
+    test("macros sum to ~100% of calories", () => {
+      const kcal = 1800;
+      const m = calcMacros(kcal);
+      const total = m.proteins * 4 + m.fats * 9 + m.carbs * 4;
+      assertOk(Math.abs(total - kcal) < 0.001);
+    });
+
+    // ── Тесты: mealPlan ──────────────────────────────────────────────
+    section("mealPlan: distribution");
+    test("4 meals returns correct names and shares", () => {
+      const plan = mealPlan(4, 2000);
+      assertEqual(plan.length, 4);
+      assertDeepEqual(plan.map(m => m.name), ["Завтрак", "Обед", "Перекус", "Ужин"]);
+      assertEqual(plan[0].kcal, Math.round(2000 * 0.3));
+      assertEqual(plan[1].kcal, Math.round(2000 * 0.35));
+      assertEqual(plan[2].kcal, Math.round(2000 * 0.15));
+      assertEqual(plan[3].kcal, Math.round(2000 * 0.2));
+    });
+    test("5 meals returns correct names and shares", () => {
+      const plan = mealPlan(5, 2000);
+      assertEqual(plan.length, 5);
+      assertDeepEqual(plan.map(m => m.name), ["Завтрак", "Перекус", "Обед", "Полдник", "Ужин"]);
+    });
+    test("non-5 count defaults to 4 meals", () => {
+      assertEqual(mealPlan(3, 2000).length, 4);
+    });
+    test("total kcal approximates target", () => {
+      const plan = mealPlan(4, 2000);
+      const total = plan.reduce((a, m) => a + m.kcal, 0);
+      assertEqual(total, 2000);
+    });
+
+    // ── Тесты: mealTimes ─────────────────────────────────────────────
+    section("mealTimes: time generation");
+    test("4 meals from 08:00 with 3h interval", () => {
+      assertDeepEqual(mealTimes("08:00", 4, 3), ["08:00", "11:00", "14:00", "17:00"]);
+    });
+    test("5 meals from 08:00 with 3h interval", () => {
+      assertDeepEqual(mealTimes("08:00", 5, 3), ["08:00", "11:00", "14:00", "17:00", "20:00"]);
+    });
+    test("custom interval 2.5h", () => {
+      assertDeepEqual(mealTimes("09:00", 4, 2.5), ["09:00", "11:30", "14:00", "16:30"]);
+    });
+    test("wraps past midnight correctly", () => {
+      assertDeepEqual(mealTimes("23:00", 4, 2), ["23:00", "01:00", "03:00", "05:00"]);
+    });
+
+    // ── Тесты: dishTotals ────────────────────────────────────────────
+    section("dishTotals: ingredient nutrition");
+    test("empty ingredients → all zeros", () => {
+      assertDeepEqual(dishTotals({ ingredients: [] }), { kcal: 0, p: 0, f: 0, c: 0, cookedMass: 0, rawMass: 0 });
+    });
+    test("single ingredient rice_white 100g", () => {
+      const t = dishTotals({ ingredients: [{ productId: "rice_white", grams: 100 }] });
+      assertEqual(t.kcal, 330);
+      assertEqual(t.cookedMass, 300);
+    });
+    test("multiple ingredients accumulate", () => {
+      const t = dishTotals({ ingredients: [
+        { productId: "rice_white", grams: 100 },
+        { productId: "chicken_breast", grams: 150 },
+      ]});
+      assertEqual(t.kcal, 330 + 169.5);
+      assertEqual(t.rawMass, 250);
+    });
+    test("unknown productId is skipped", () => {
+      const t = dishTotals({ ingredients: [
+        { productId: "rice_white", grams: 100 },
+        { productId: "nonexistent", grams: 200 },
+      ]});
+      assertEqual(t.kcal, 330);
+      assertEqual(t.rawMass, 100);
+    });
+
+    // ── Тесты: round / fmt ───────────────────────────────────────────
+    section("round / fmt helpers");
+    test("round to nearest integer", () => {
+      assertEqual(round(2.4), 2);
+      assertEqual(round(2.5), 3);
+    });
+    test("fmt formats with ru-RU locale", () => {
+      assertEqual(fmt(1234), "1\u00a0234");
+      assertEqual(fmt(0), "0");
+    });
+
+    // ── Тесты: kcalChart — график калорий ───────────────────────────
+    section("kcalChart: график калорий на Дневник");
+    test("пустая история → пустая строка", () => {
+      assertEqual(kcalChart([], 2000), "");
+    });
+    test("одна запись — SVG содержит столбец и линию цели", () => {
+      const svg = kcalChart([{ date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 }], 1597);
+      assertOk(svg.includes("<svg"));
+      assertOk(svg.includes("bar-rect"), "должен содержать столбец");
+      assertOk(svg.includes("goal-line"), "должен содержать линию цели");
+      assertOk(svg.includes("1597"), "должен показывать цель");
+      assertOk(svg.includes("1749"), "должен показывать факт");
+    });
+    test("несколько записей — по столбцу на каждый день", () => {
+      const history = [
+        { date: "2026-11-08", kcal: 1600, p: 120, f: 53, c: 160 },
+        { date: "2026-11-09", kcal: 1750, p: 130, f: 58, c: 175 },
+        { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 },
+      ];
+      const svg = kcalChart(history, 1597);
+      const barCount = (svg.match(/bar-rect/g) || []).length;
+      assertEqual(barCount, 3, "должно быть 3 столбца");
+    });
+    test("данные дня имеют формат { date, kcal, p, f, c }", () => {
+      const entry = { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 };
+      assertOk(typeof entry.date === "string" && entry.date.length === 10);
+      assertOk(typeof entry.kcal === "number");
+      assertOk(typeof entry.p === "number");
+      assertOk(typeof entry.f === "number");
+      assertOk(typeof entry.c === "number");
+      assertOk(kcalChart([entry], 1597).includes("<svg"));
+    });
+    test("цель превышает факт — линия выше столбца", () => {
+      const svg = kcalChart([{ date: "2026-11-10", kcal: 1200, p: 90, f: 40, c: 120 }], 2000);
+      assertOk(svg.includes("goal-line"));
+      assertOk(svg.includes("2000"));
+      assertOk(svg.includes("1200"));
+    });
+    test("факт превышает цель — столбец выше линии", () => {
+      const svg = kcalChart([{ date: "2026-11-10", kcal: 2500, p: 188, f: 83, c: 250 }], 2000);
+      assertOk(svg.includes("bar-rect"));
+      assertOk(svg.includes("goal-line"));
+    });
+
+    // ── Тесты: chartsHtml ───────────────────────────────────────────
+    section("chartsHtml: обёртка графиков");
+    test("пустая история → пустая строка", () => {
+      assertEqual(chartsHtml([], 2000, { proteins: 150, fats: 67, carbs: 200 }), "");
+    });
+    test("одна запись — возвращает контейнер с графиками", () => {
+      const html = chartsHtml([{ date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 }], 1597, { proteins: 120, fats: 53, carbs: 160 });
+      assertOk(html.includes('class="charts"'));
+      assertOk(html.includes("Калории по дням"));
+      assertOk(html.includes("БЖУ по дням"));
+    });
+    test("несколько записей — рендер всех дней", () => {
+      const history = [
+        { date: "2026-11-08", kcal: 1600, p: 120, f: 53, c: 160 },
+        { date: "2026-11-09", kcal: 1750, p: 130, f: 58, c: 175 },
+        { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 },
+      ];
+      const html = chartsHtml(history, 1597, { proteins: 120, fats: 53, carbs: 160 });
+      assertOk(html.includes("08.11"), "первый день");
+      assertOk(html.includes("09.11"), "второй день");
+      assertOk(html.includes("10.11"), "третий день");
+    });
+
+    // ── Тесты: интеграция calc → chart ───────────────────────────────
+    section("Интеграция: calc → данные графика");
+    test("calcCalories и calcMacros дают данные для графика", () => {
+      const client = { gender: "female", weight: 70, height: 170, age: 30, activity: "1.375", goal: "lose20" };
+      const cal = Math.round(calcCalories(client));
+      const macros = calcMacros(cal);
+      const html = chartsHtml([{ date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 }], cal, macros);
+      assertOk(html.includes(String(cal)), "цель из calcCalories");
+      assertOk(html.includes("1749"), "факт из данных дня");
+    });
+    test("цель lose20 = базовые × 0.8 для графика", () => {
+      const base = { gender: "female", weight: 70, height: 170, age: 30, activity: "1.375" };
+      const loseCal = calcCalories({ ...base, goal: "lose20" });
+      assertEqual(loseCal, calcCalories(base) * 0.8);
+      const svg = kcalChart([{ date: "2026-11-10", kcal: 1500, p: 100, f: 50, c: 150 }], loseCal);
+      assertOk(svg.includes(String(Math.round(loseCal))), "линия цели соответствует расчёту");
+    });
+
+    // ── Рендер результатов ───────────────────────────────────────────
+    const passed = results.filter(r => r.pass).length;
+    const failed = results.filter(r => !r.pass).length;
+
+    document.getElementById("runner-status").textContent =
+      failed === 0 ? `✅ Все ${results.length} тестов прошли` : `❌ ${failed} из ${results.length} тестов не прошли`;
+
+    document.getElementById("summary").innerHTML = `
+      <span class="test-badge pass">✓ Прошли: ${passed}</span>
+      ${failed > 0 ? `<span class="test-badge fail">✗ Упали: ${failed}</span>` : ""}
+      <span class="test-badge total">Всего: ${results.length}</span>
+    `;
+
+    let lastSection = "";
+    const html = results.map(r => {
+      let sec = "";
+      if (r.section !== lastSection) { lastSection = r.section; sec = `<div class="test-section">${r.section}</div>`; }
+      return sec + `<div class="test-item ${r.pass ? "pass" : "fail"}">
+        <span class="test-icon">${r.pass ? "✅" : "❌"}</span>
+        <span class="test-name">${r.name}</span>
+        ${r.error ? `<div class="test-error">${r.error}</div>` : ""}
+      </div>`;
+    }).join("");
+    document.getElementById("results").innerHTML = `<ul class="test-list">${html}</ul>`;
+  </script>
+</body>
+</html>
