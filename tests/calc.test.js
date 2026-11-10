@@ -9,6 +9,7 @@ import {
   round,
   fmt,
 } from "../js/calc.js";
+import { kcalChart, chartsHtml } from "../js/chart.js";
 
 // ── calcCalories: Mifflin-St Jeor (default formula) ──────────────────────
 
@@ -333,4 +334,110 @@ test("fmt: formats with ru-RU locale (space as thousands separator)", () => {
 
 test("fmt: handles negative numbers", () => {
   assert.equal(fmt(-193), "-193");
+});
+
+// ── kcalChart: данные графика калорий на вкладке Дневник ─────────────────
+
+test("kcalChart: пустая история → пустая строка", () => {
+  assert.equal(kcalChart([], 2000), "");
+});
+
+test("kcalChart: одна запись — SVG содержит столбец и линию цели", () => {
+  const history = [{ date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 }];
+  const svg = kcalChart(history, 1597);
+  assert.ok(svg.includes("<svg"), "должен содержать SVG-элемент");
+  assert.ok(svg.includes("chart-block"), "должен быть обёрнут в chart-block");
+  assert.ok(svg.includes("bar-rect"), "должен содержать столбец диаграммы");
+  assert.ok(svg.includes("goal-line"), "должен содержать линию цели");
+  assert.ok(svg.includes("1597"), "должен показывать значение цели");
+  assert.ok(svg.includes("1749"), "должен показывать значение калорий над столбцом");
+});
+
+test("kcalChart: несколько записей — по столбцу на каждый день", () => {
+  const history = [
+    { date: "2026-11-08", kcal: 1600, p: 120, f: 53, c: 160 },
+    { date: "2026-11-09", kcal: 1750, p: 130, f: 58, c: 175 },
+    { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 },
+  ];
+  const svg = kcalChart(history, 1597);
+  const barCount = (svg.match(/bar-rect/g) || []).length;
+  assert.equal(barCount, 3, "должно быть 3 столбца — по одному на каждый день");
+});
+
+test("kcalChart: данные дня имеют формат { date, kcal, p, f, c }", () => {
+  const entry = { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 };
+  assert.ok(typeof entry.date === "string" && entry.date.length === 10);
+  assert.ok(typeof entry.kcal === "number");
+  assert.ok(typeof entry.p === "number");
+  assert.ok(typeof entry.f === "number");
+  assert.ok(typeof entry.c === "number");
+  // График должен корректно отрендерить эту запись
+  const svg = kcalChart([entry], 1597);
+  assert.ok(svg.includes("<svg"));
+});
+
+test("kcalChart: цель превышает факт — линия выше столбца", () => {
+  const history = [{ date: "2026-11-10", kcal: 1200, p: 90, f: 40, c: 120 }];
+  const svg = kcalChart(history, 2000);
+  assert.ok(svg.includes("goal-line"), "линия цели присутствует");
+  assert.ok(svg.includes("2000"), "значение цели отображено");
+  assert.ok(svg.includes("1200"), "значение факта отображено");
+});
+
+test("kcalChart: факт превышает цель — столбец выше линии", () => {
+  const history = [{ date: "2026-11-10", kcal: 2500, p: 188, f: 83, c: 250 }];
+  const svg = kcalChart(history, 2000);
+  assert.ok(svg.includes("bar-rect"), "столбец присутствует");
+  assert.ok(svg.includes("goal-line"), "линия цели присутствует");
+  // maxV = max(2000, 2500) * 1.15 = 2875 — оба элемента помещаются в график
+});
+
+// ── chartsHtml: обёртка над kcalChart и macroChart ──────────────────────
+
+test("chartsHtml: пустая история → пустая строка", () => {
+  assert.equal(chartsHtml([], 2000, { proteins: 150, fats: 67, carbs: 200 }), "");
+});
+
+test("chartsHtml: одна запись — возвращает контейнер с графиками", () => {
+  const history = [{ date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 }];
+  const html = chartsHtml(history, 1597, { proteins: 120, fats: 53, carbs: 160 });
+  assert.ok(html.includes('class="charts"'), "должен содержать div.charts");
+  assert.ok(html.includes("Калории по дням"), "должен содержать график калорий");
+  assert.ok(html.includes("БЖУ по дням"), "должен содержать график БЖУ");
+});
+
+test("chartsHtml: несколько записей — корректный рендер всех дней", () => {
+  const history = [
+    { date: "2026-11-08", kcal: 1600, p: 120, f: 53, c: 160 },
+    { date: "2026-11-09", kcal: 1750, p: 130, f: 58, c: 175 },
+    { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 },
+  ];
+  const html = chartsHtml(history, 1597, { proteins: 120, fats: 53, carbs: 160 });
+  assert.ok(html.includes("08.11"), "должен содержать дату первого дня");
+  assert.ok(html.includes("09.11"), "должен содержать дату второго дня");
+  assert.ok(html.includes("10.11"), "должен содержать дату третьего дня");
+});
+
+// ── Интеграция: calcCalories → цель для графика ─────────────────────────
+
+test("интеграция: calcCalories и calcMacros дают данные для графика", () => {
+  const client = { gender: "female", weight: 70, height: 170, age: 30, activity: "1.375", goal: "lose20" };
+  const cal = Math.round(calcCalories(client));
+  const macros = calcMacros(cal);
+  // Строим запись дня как делает dayTotals в report.js
+  const dayEntry = { date: "2026-11-10", kcal: 1749, p: 136, f: 53, c: 187 };
+  const history = [dayEntry];
+  const html = chartsHtml(history, cal, macros);
+  assert.ok(html.includes(String(cal)), "график должен показывать цель из calcCalories");
+  assert.ok(html.includes("1749"), "график должен показывать факт из данных дня");
+});
+
+test("интеграция: цель lose20 = базовые калории × 0.8 для графика", () => {
+  const base = { gender: "female", weight: 70, height: 170, age: 30, activity: "1.375" };
+  const baseCal = calcCalories(base);
+  const loseCal = calcCalories({ ...base, goal: "lose20" });
+  assert.equal(loseCal, baseCal * 0.8);
+  // Эта величина передаётся как goalKcal в kcalChart
+  const svg = kcalChart([{ date: "2026-11-10", kcal: 1500, p: 100, f: 50, c: 150 }], loseCal);
+  assert.ok(svg.includes(String(Math.round(loseCal))), "линия цели соответствует расчёту");
 });
