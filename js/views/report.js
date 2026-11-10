@@ -196,7 +196,13 @@ function renderTables(s) {
 
   const footerHtml = `<div class="rep-footer">Следите за порциями и интервалами 2–3 часа. БЖУ 30/30/40. Так держать! 💪</div>`;
 
-  const charts = chartsHtml(s.diary.history, cal, tm);
+  // Включаем текущий (несохранённый) день в график, чтобы он был виден сразу
+  const today = s.diary.date || todayStr();
+  const histWithToday = [...s.diary.history];
+  if (!histWithToday.some((h) => h.date === today)) {
+    histWithToday.push({ date: today, kcal: dKcal, p: dP, f: dF, c: dC });
+  }
+  const charts = chartsHtml(histWithToday, cal, tm);
   return mealsHtml + dailyHtml + compHtml + charts + footerHtml;
 }
 
