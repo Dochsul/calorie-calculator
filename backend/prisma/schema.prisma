@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Пользователи ───
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("user") // "user" | "admin"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  questionnaire   Questionnaire?
+  fridgeItems    FridgeItem[]
+  preferences    UserPreference?
+  menus          Menu[]
+  subscription   Subscription?
+  payments       Payment[]
+  familyMembers  FamilyMember[]
+}
+
+// ─── Пищевая база ───
+model Food {
+  id       String  @id
+  name     String
+  category String
+  kcal     Float   // ккал на 100 г (сырой/сухой)
+  protein  Float   // г на 100 г
+  fat      Float   // г на 100 г
+  carbs    Float   // г на 100 г
+  yield    Float   @default(1.0) // коэффициент выхода готовой массы
+  tags     String[]
+  units    Json    // { "г": 1, "шт": 50, "мл": 1 } — перевод в граммы
+
+  @@index([category])
+}
+
+// ─── Рецепты ───
+model Recipe {
+  id          String   @id @default(cuid())
+  name        String
+  mealType    String   // breakfast | lunch | dinner | snack
+  cuisine     String?
+  prepTime    Int      @default(5)   // минут
+  cookTime    Int      @default(15)  // минут
+  difficulty  String   @default("easy") // easy | medium | hard
+  servings    Int      @default(1)
+  steps       String[]
+  ingredients Json     // [{ foodId, grams }]
+  tags        String[]
+  source      String?
+
+  @@index([mealType])
+}
+
+// ─── Анкета питания ───
+model Questionnaire {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal               String?  // lose_weight | maintain | muscle_gain | balanced
+  age                Int?
+  height             Int?
+  weight             Float?
+  gender             String?  // male | female
+  formula            String?  @default("mifflin") // mifflin | harris
+  activityLevel      String?  // "1.2" | "1.375" | "1.55" | "1.725"
+  mealsPerDay        Int      @default(4)
+  budget             String?  // low | medium | high
+  cookingTime        Int?     // макс минут на приготовление
+  difficultyPref     String?  // easy | medium | hard
+  pregnancy          Boolean  @default(false)
+  breastfeeding      Boolean  @default(false)
+  cycle              Boolean  @default(false)
+  notes              String?
+  customCalories     Int?     // ручной ввод калорийности
+  customProtein      Float?
+  customFat          Float?
+  customCarbs        Float?
+  isChild            Boolean  @default(false)
+  childAgeGroup      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─── Холодильник ───
+model FridgeItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  amount    Float
+  unit      String   @default("г")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─── Предпочтения ───
+model UserPreference {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likedFoods     String[]
+  dislikedFoods  String[]
+  allergies      String[]
+  dietaryTags    String[]  // halal, vegetarian, vegan, glutenFree, dairyFree
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── Меню ───
+model Menu {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  menuData  Json     // полная структура: [{ mealType, recipeId, servings, nutrition }]
+  isSaved   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+// ─── Члены семьи ───
+model FamilyMember {
+  id            String  @id @default(cuid())
+  userId        String  // владелец семьи
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  age           Int
+  gender        String
+  weight        Float?
+  height        Int?
+  activityLevel String?
+  goal          String?
+  isChild       Boolean @default(false)
+
+  @@index([userId])
+}
+
+// ─── Тарифы ───
+model SubscriptionPlan {
+  id            String   @id @default(cuid())
+  code          String   @unique // monthly | quarterly | yearly
+  name          String
+  priceCents    Int      // цена в центах (евро)
+  currency      String   @default("eur")
+  interval      String   // month | quarter | year
+  durationDays  Int
+  active        Boolean  @default(true)
+  stripePriceId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ─── Подписка пользователя ───
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planCode             String
+  status               String    @default("none") // none | trialing | active | canceled | past_due | incomplete
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+// ─── Платежи ───
+model Payment {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountCents          Int
+  planCode             String
+  status               String   // pending | succeeded | failed | refunded
+  stripePaymentIntentId String?
+  stripeInvoiceId      String?
+  createdAt            DateTime @default(now())
+
+  @@index([userId])
+}
