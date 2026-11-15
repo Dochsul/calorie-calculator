@@ -1,6 +1,7 @@
-// Вкладка «Анкета»: данные клиента, расчёт калорий/БЖУ, режим питания, ограничения
+// Вкладка «Анкета»: данные клиента, режим питания, ограничения.
+// Расчёт КБЖУ перенесён в отдельную вкладку «Мой КБЖУ».
 import { getState, update, targetCalories } from "../store.js";
-import { calcCalories, calcMacros, mealPlan, mealTimes } from "../calc.js";
+import { calcCalories, calcMacros } from "../calc.js";
 
 const GOALS = {
   maintain: "Поддержание веса",
@@ -16,8 +17,6 @@ export function renderClient(root) {
   const x = s.restrictions;
   const cal = targetCalories();
   const macros = calcMacros(cal);
-  const plan = mealPlan(r.mealsPerDay, cal);
-  const times = mealTimes(r.firstMealTime, r.mealsPerDay, r.intervalHours);
 
   root.innerHTML = `
   <div class="grid2">
@@ -68,16 +67,17 @@ export function renderClient(root) {
       <h2>Режим питания</h2>
       <label>Приёмов пищи в день
         <select id="r_meals">
+          <option value="3" ${r.mealsPerDay === 3 ? "selected" : ""}>3 приёма</option>
           <option value="4" ${r.mealsPerDay === 4 ? "selected" : ""}>4 приёма</option>
           <option value="5" ${r.mealsPerDay === 5 ? "selected" : ""}>5 приёмов</option>
         </select>
       </label>
       <div class="row2">
         <label>Первый приём<input id="r_first" type="time" value="${r.firstMealTime}"></label>
-        <label>Интервал, ч<input id="r_interval" type="number" min="2" max="3" step="0.5" value="${r.intervalHours}"></label>
+        <label>Интервал, ч<input id="r_interval" type="number" min="2" max="5" step="0.5" value="${r.intervalHours}"></label>
       </div>
       <label>Дней в меню<input id="r_days" type="number" min="1" max="7" value="${r.days}"></label>
-      <div class="hint">Интервал между приёмами 2–3 часа.</div>
+      <div class="hint">Интервал между приёмами 2–5 часов.</div>
 
       <h2 style="margin-top:18px">Ограничения</h2>
       <div class="checks">
@@ -92,7 +92,7 @@ export function renderClient(root) {
   </div>
 
   <section class="card result-card">
-    <h2>Индивидуальный расчёт</h2>
+    <h2>Предварительный расчёт</h2>
     <div class="metrics">
       <div class="metric big"><span>Калории</span><b>${Math.round(cal).toLocaleString("ru-RU")} ккал</b></div>
       <div class="metric"><span>Белки</span><b>${Math.round(macros.proteins)} г</b></div>
@@ -100,13 +100,14 @@ export function renderClient(root) {
       <div class="metric"><span>Углеводы</span><b>${Math.round(macros.carbs)} г</b></div>
     </div>
     ${c.goal === "lose20" ? '<div class="hint">Применён дефицит 20%.</div>' : ""}
-    <div class="plan">
-      <h3>Распределение по приёмам пищи</h3>
-      ${plan.map((m, i) => `<div class="plan-row"><span class="t">${times[i]}</span><span class="n">${m.name}</span><b>${m.kcal} ккал</b></div>`).join("")}
-    </div>
+    <button class="btn primary" id="go_kbzhu" style="margin-top:12px">Перейти к настройке КБЖУ →</button>
   </section>`;
 
   bind(root);
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
 }
 
 function bind(root) {
@@ -153,14 +154,17 @@ function bind(root) {
     const n = Math.max(1, Math.min(7, parseInt(e.target.value, 10) || 1));
     update((s) => {
       s.regimen.days = n;
-      const per = s.regimen.mealsPerDay;
-      while (s.menu.days.length < n) s.menu.days.push({ meals: Array.from({ length: per }, () => ({ dishId: null, servings: 1 })) });
+      while (s.menu.days.length < n)
+        s.menu.days.push({ meals: Array.from({ length: s.regimen.mealsPerDay }, () => ({ dishId: null, servings: 1 })) });
       while (s.menu.days.length > n) s.menu.days.pop();
     });
     rebind();
   };
-}
 
-function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
+  const goKbzhu = num("go_kbzhu");
+  if (goKbzhu) {
+    goKbzhu.onclick = () => {
+      document.querySelector('[data-tab="kbzhu"]')?.click();
+    };
+  }
 }

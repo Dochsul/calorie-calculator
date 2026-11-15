@@ -1,5 +1,5 @@
 // Хранилище состояния: localStorage (кэш) + backend (постоянное хранилище)
-import { calcCalories } from "./calc.js";
+import { calcCalories, calcMacros, gramsFromPercents } from "./calc.js";
 import { api } from "./api.js";
 
 const KEY = "aina_evidence_state_v1";
@@ -105,6 +105,21 @@ export function defaultState() {
       history: [],
     },
     pantry: { productIds: [] },
+    // Настройки КБЖУ: режим auto/manual, сохранённые значения
+    macroSettings: {
+      mode: "auto",        // "auto" — расчёт по анкете, "manual" — ручной ввод
+      saved: false,         // сохранённые настройки
+      calories: null,      // ручная калорийность (null = auto)
+      proteins: null,       // граммы (null = auto)
+      fats: null,
+      carbs: null,
+      proteinPct: 30,       // проценты (для ручного режима по %)
+      fatPct: 30,
+      carbPct: 40,
+      mealsPerDay: null,    // переопределение числа приёмов (null = из режима)
+      // Кастомное распределение калорий по приёмам (null = стандартное)
+      mealDistribution: null,
+    },
   };
 }
 
@@ -130,6 +145,7 @@ function load() {
         templates: { ...base.templates, ...(parsed.templates || {}) },
         diary: { ...base.diary, ...(parsed.diary || {}) },
         pantry: { ...base.pantry, ...(parsed.pantry || {}) },
+        macroSettings: { ...base.macroSettings, ...(parsed.macroSettings || {}) },
       };
       // согласовать число приёмов с режимом
       const n = merged.regimen.mealsPerDay;
@@ -183,6 +199,7 @@ export async function loadFromBackend() {
       templates: { ...base.templates, ...(data.templates || {}) },
       diary: { ...base.diary, ...(data.diary || {}) },
       pantry: { ...base.pantry, ...(data.pantry || {}) },
+      macroSettings: { ...base.macroSettings, ...(data.macroSettings || {}) },
     };
     const n = state.regimen.mealsPerDay;
     state.menu.days.forEach((d) => {
@@ -212,7 +229,25 @@ export function update(mutator) {
 }
 
 export function targetCalories() {
+  const ms = state.macroSettings || {};
+  if (ms.mode === "manual" && ms.saved && ms.calories) {
+    return Math.round(ms.calories);
+  }
   return Math.round(calcCalories(state.client));
+}
+
+// Текущие макросы (граммы) с учётом режима auto/manual
+export function targetMacros() {
+  const ms = state.macroSettings || {};
+  const cal = targetCalories();
+  if (ms.mode === "manual" && ms.saved) {
+    if (ms.proteins != null && ms.fats != null && ms.carbs != null) {
+      return { proteins: ms.proteins, fats: ms.fats, carbs: ms.carbs };
+    }
+    // Из процентов
+    return gramsFromPercents(cal, ms.proteinPct, ms.fatPct, ms.carbPct);
+  }
+  return calcMacros(cal);
 }
 
 export function newDishId() {

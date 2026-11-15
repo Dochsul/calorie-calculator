@@ -1,24 +1,32 @@
 // Конфигурация монетизации Aina Évidence.
-// Реквизиты задаёт владелец приложения — они видны на экране оплаты всем клиентам.
-// ЗАМЕНИТЕ плейсхолдеры на реальные значения (карта/телефон Сбербанка).
-export const PAYMENT = {
-  method: "Перевод на карту Сбербанка",
-  recipient: "Мусхаджиева А. С.",
-  details: "2202 2036 1000 3412",      // номер карты Сбербанка
-  phone: "+7 966 720-09-97",           // привязанный номер (СБП)
-  note: "В назначении платежа укажите «Aina Évidence» и пришлите чек — вы получите индивидуальный код доступа.",
-};
+// Тарифы в евро. Цены редактируются в админ-панели и хранятся в БД.
 
-// Тарифные планы подписки: days — срок в днях, price — цена в ₽.
 export const PLANS = [
-  { days: 30, label: "1 месяц", price: "990", perMonth: "990 ₽/мес", save: null },
-  { days: 90, label: "3 месяца", price: "2490", perMonth: "830 ₽/мес", save: "выгода 480 ₽" },
-  { days: 365, label: "1 год", price: "7990", perMonth: "666 ₽/мес", save: "выгода 3 790 ₽" },
+  { id: "monthly", interval: "month", label: "1 месяц", price: "12.90", perMonth: "12,90 €/мес", save: null },
+  { id: "quarterly", interval: "3-month", label: "3 месяца", price: "34.90", perMonth: "11,63 €/мес", save: "выгода 3,80 €" },
+  { id: "yearly", interval: "year", label: "12 месяцев", price: "119.90", perMonth: "9,99 €/мес", save: "выгода 34,90 €" },
 ];
 
-// Пробный период (бесплатный, один раз на устройство).
-export const TRIAL_DAYS = 3;
+// Бесплатные функции (доступны без подписки)
+export const FREE_FEATURES = {
+  questionnaire: true,    // Заполнение анкеты и расчёт КБЖУ
+  viewResults: true,      // Просмотр результатов расчёта
+  pantry: false,          // Управление продуктами — платная
+  menu: false,            // Генерация меню — платная
+  dishes: false,          // Создание блюд — платная
+  shopping: false,        // Список покупок — платная
+  report: false,          // Дневник питания — платная
+  templates: false,       // Шаблоны — платная
+};
 
-// PIN-код администратора для входа в панель генерации кодов.
-// Смените после первого входа. Хранится в исходном коде (защита мягкая — см. README).
-export const ADMIN_PIN = "8899";
+// Разовый вступительный платёж (отключён по умолчанию)
+export const INIT_FEE = {
+  enabled: false,
+  amount: "29.90",
+  label: "Разовый вступительный взнос",
+};
+
+// URL для Stripe Checkout (публичный ключ)
+export const STRIPE_PUBLIC_KEY = "";
+
+export default { PLANS, FREE_FEATURES, INIT_FEE };

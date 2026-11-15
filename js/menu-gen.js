@@ -73,13 +73,14 @@ function pickProduct(role, pantrySet, usedToday, usedYesterday) {
   return shuffle(pool)[0];
 }
 
-export function generateMenu(pantryIds, regimen, targetKcal) {
+export function generateMenu(pantryIds, regimen, targetKcal, numDays, macros) {
   const pantrySet = new Set(pantryIds || []);
   if (pantrySet.size < 3) return null;
 
-  const days = regimen.days || 1;
+  const days = numDays || regimen.days || 1;
   const mealsPerDay = regimen.mealsPerDay || 4;
-  const plan = mealPlan(mealsPerDay, targetKcal);
+  const m = macros || null;
+  const plan = mealPlan(mealsPerDay, targetKcal, m);
   const times = mealTimes(regimen.firstMealTime, mealsPerDay, regimen.intervalHours);
 
   const menuDays = [];
@@ -126,8 +127,8 @@ export function generateMenu(pantryIds, regimen, targetKcal) {
 
 // Создать блюда из сгенерированного меню и вернуть готовую структуру
 // для сохранения в store (dishes + menu.days)
-export function buildGeneratedMenu(pantryIds, regimen, targetKcal, dishIdFn) {
-  const generated = generateMenu(pantryIds, regimen, targetKcal);
+export function buildGeneratedMenu(pantryIds, regimen, targetKcal, dishIdFn, numDays, macros) {
+  const generated = generateMenu(pantryIds, regimen, targetKcal, numDays, macros);
   if (!generated) return null;
 
   const newDishes = [];

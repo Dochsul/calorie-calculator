@@ -13,6 +13,7 @@ export function renderAuth(root) {
         <div class="auth-tabs">
           <button class="auth-tab active" data-tab="login">Вход</button>
           <button class="auth-tab" data-tab="register">Регистрация</button>
+          <button class="auth-tab" data-tab="reset">Восстановление</button>
         </div>
 
         <form id="auth_login" class="auth-form">
@@ -40,18 +41,30 @@ export function renderAuth(root) {
           <p id="rg_err" class="pw-err" hidden></p>
         </form>
 
-        <p class="auth-hint">После регистрации вы получите доступ к конструктору меню на 3 дня бесплатно.</p>
+        <form id="auth_reset" class="auth-form" hidden>
+          <label>Email
+            <input type="email" id="rs_email" required placeholder="you@example.com" autocomplete="email">
+          </label>
+          <label>Новый пароль
+            <input type="password" id="rs_pass" required minlength="6" placeholder="минимум 6 символов" autocomplete="new-password">
+          </label>
+          <button type="submit" class="btn primary">Сбросить пароль</button>
+          <p id="rs_msg" class="pw-err" hidden></p>
+          <p class="hint">Введите email и новый пароль. Пароль будет обновлён сразу.</p>
+        </form>
+
+        <p class="auth-hint">После регистрации вы получите доступ к конструктору меню.</p>
       </div>
     </section>`;
 
-  // Переключение вкладок
   root.querySelectorAll(".auth-tab").forEach((tab) => {
     tab.onclick = () => {
       root.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
-      const isLogin = tab.dataset.tab === "login";
-      root.querySelector("#auth_login").hidden = !isLogin;
-      root.querySelector("#auth_register").hidden = isLogin;
+      const target = tab.dataset.tab;
+      root.querySelector("#auth_login").hidden = target !== "login";
+      root.querySelector("#auth_register").hidden = target !== "register";
+      root.querySelector("#auth_reset").hidden = target !== "reset";
     };
   });
 
@@ -87,6 +100,26 @@ export function renderAuth(root) {
     } catch (err) {
       rgErr.textContent = err.message;
       rgErr.hidden = false;
+    }
+  };
+
+  // Восстановление пароля
+  const rsForm = root.querySelector("#auth_reset");
+  const rsMsg = root.querySelector("#rs_msg");
+  rsForm.onsubmit = async (e) => {
+    e.preventDefault();
+    rsMsg.hidden = true;
+    const email = root.querySelector("#rs_email").value;
+    const password = root.querySelector("#rs_pass").value;
+    try {
+      const res = await api.resetPassword(email, password);
+      rsMsg.textContent = res.message || "Пароль обновлён. Войдите с новым паролем.";
+      rsMsg.style.color = "var(--accent)";
+      rsMsg.hidden = false;
+    } catch (err) {
+      rsMsg.textContent = err.message;
+      rsMsg.style.color = "";
+      rsMsg.hidden = false;
     }
   };
 }

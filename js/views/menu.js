@@ -1,7 +1,7 @@
-// Вкладка «Меню»: автогенерация из продуктов дома, меню по дням,
-// карточки блюд, замена блюда с пересчётом КБЖУ, сохранение.
-import { getState, update, targetCalories, newDishId } from "../store.js";
-import { mealPlan, mealTimes, dishTotals } from "../calc.js";
+// Вкладка «Меню»: кнопки «Сегодня», «Завтра», «7 дней», автогенерация,
+// карточки блюд с полным КБЖУ, замена блюда с пересчётом, отклонения от целей.
+import { getState, update, targetCalories, targetMacros, newDishId } from "../store.js";
+import { mealPlan, mealTimes, dishTotals, macroPercents } from "../calc.js";
 import { buildGeneratedMenu } from "../menu-gen.js";
 import { dishServing, macroLine, ingList, progress, esc } from "../ui.js";
 
@@ -11,7 +11,8 @@ export function renderMenu(root) {
   const s = getState();
   const r = s.regimen;
   const cal = targetCalories();
-  const plan = mealPlan(r.mealsPerDay, cal);
+  const macros = targetMacros();
+  const plan = mealPlan(r.mealsPerDay, cal, macros);
   const times = mealTimes(r.firstMealTime, r.mealsPerDay, r.intervalHours);
   const pantryCount = (s.pantry?.productIds || []).length;
 
@@ -24,6 +25,13 @@ export function renderMenu(root) {
       const target = plan[mi] ? plan[mi].kcal : 0;
       return mealSlot(di, mi, times[mi], plan[mi], meal, dish, s, target);
     }).join("");
+
+    // Отклонения от целей
+    const devKcal = Math.round(dKcal - cal);
+    const devP = Math.round(dP - macros.proteins);
+    const devF = Math.round(dF - macros.fats);
+    const devC = Math.round(dC - macros.carbs);
+
     return `<section class="card day">
       <div class="card-head"><h2>День ${di + 1} — ${dayNames[di % 7]}</h2>
         <span class="day-tot">${Math.round(dKcal)} / ${cal} ккал</span></div>
@@ -31,32 +39,48 @@ export function renderMenu(root) {
       <div class="day-total">
         ${progress(dKcal, cal)}
         <div class="dt-nums">Итог: <b>${Math.round(dKcal)} ккал</b> · Б ${Math.round(dP)} · Ж ${Math.round(dF)} · У ${Math.round(dC)} г</div>
+        <div class="dt-deviation ${devKcal === 0 ? "ok" : devKcal > 0 ? "over" : "under"}">
+          Отклонение: ${devKcal >= 0 ? "+" : ""}${devKcal} ккал · Б ${devP >= 0 ? "+" : ""}${devP} · Ж ${devF >= 0 ? "+" : ""}${devF} · У ${devC >= 0 ? "+" : ""}${devC} г
+        </div>
       </div>
     </section>`;
   }).join("");
 
   root.innerHTML = `
     <div class="menu-toolbar">
-      <button class="btn primary" id="m_gen" ${pantryCount < 3 ? "disabled title='Отметьте минимум 3 продукта на вкладке Продукты дома'" : ""}>
-        Сгенерировать из моих продуктов
-      </button>
-      <span class="hint">${pantryCount} продуктов дома · цель ${cal} ккал</span>
+      <div class="menu-gen-buttons">
+        <button class="btn primary" id="m_today" ${pantryCount < 3 ? "disabled" : ""}>Составить меню на сегодня</button>
+        <button class="btn primary" id="m_tomorrow" ${pantryCount < 3 ? "disabled" : ""}>Составить меню на завтра</button>
+        <button class="btn primary" id="m_week" ${pantryCount < 3 ? "disabled" : ""}>Составить меню на 7 дней</button>
+      </div>
+      <button class="btn" id="m_gen_pantry" ${pantryCount < 3 ? "disabled" : ""}>Сгенерировать из моих продуктов</button>
+      <span class="hint">${pantryCount} продуктов дома · цель ${cal} ккал · Б ${Math.round(macros.proteins)} · Ж ${Math.round(macros.fats)} · У ${Math.round(macros.carbs)} г</span>
     </div>
+    ${pantryCount < 3 ? '<div class="hint" style="padding:8px 0">Отметьте минимум 3 продукта на вкладке «Продукты дома» для генерации меню.</div>' : ""}
     <div class="days">${days}</div>`;
 
   bind(root, s);
-  root.querySelector("#m_gen").onclick = () => {
+
+  const genMenu = (numDays) => {
     const st = getState();
     const pantryIds = st.pantry?.productIds || [];
-    if (pantryIds < 3) return;
-    const result = buildGeneratedMenu(pantryIds, st.regimen, cal, newDishId);
+    if (pantryIds.length < 3) return;
+    const result = buildGeneratedMenu(pantryIds, st.regimen, cal, newDishId, numDays, macros);
     if (!result) { alert("Недостаточно продуктов для генерации меню"); return; }
     update((s) => {
-      s.dishes = [...s.dishes, ...result.dishes];
+      // Добавляем только новые блюда (избегаем дубликатов)
+      const existingIds = new Set(s.dishes.map((d) => d.id));
+      const newDishes = result.dishes.filter((d) => !existingIds.has(d.id));
+      s.dishes = [...s.dishes, ...newDishes];
       s.menu = { days: result.days };
     });
     renderMenu(root);
   };
+
+  root.querySelector("#m_today")?.addEventListener("click", () => genMenu(1));
+  root.querySelector("#m_tomorrow")?.addEventListener("click", () => genMenu(1));
+  root.querySelector("#m_week")?.addEventListener("click", () => genMenu(7));
+  root.querySelector("#m_gen_pantry")?.addEventListener("click", () => genMenu(st => st.regimen.days || 1));
 }
 
 function mealSlot(di, mi, time, planItem, meal, dish, s, target) {
@@ -64,13 +88,22 @@ function mealSlot(di, mi, time, planItem, meal, dish, s, target) {
   let block = "";
   if (dish) {
     const sv = dishServing(dish, meal.servings);
+    const pct = macroPercents(sv.p, sv.f, sv.c);
     block = `
       <div class="slot-card">
+        <div class="slot-recipe">${esc(dish.note || "Способ приготовления: см. рецепт.")}</div>
         <ul class="dc-ings">${ingList(dish, meal.servings)}</ul>
         <div class="slot-stats">
-          <span>${Math.round(sv.kcal)} / ${target} ккал</span>
+          <span><b>${Math.round(sv.kcal)} / ${target} ккал</b></span>
           <span>${macroLine(sv)}</span>
           <span>готово: ${Math.round(sv.cookedMass)} г</span>
+          <span>сырой вес: ${Math.round(sv.rawMass)} г</span>
+        </div>
+        <div class="slot-pct">
+          <span class="lg-protein">Б ${Math.round(pct.protein)}%</span>
+          <span class="lg-fat">Ж ${Math.round(pct.fat)}%</span>
+          <span class="lg-carb">У ${Math.round(pct.carb)}%</span>
+          <span>порция: ${Math.round(sv.cookedMass)} г</span>
         </div>
         <div class="slot-actions">
           <label class="serv">Порции <input type="number" min="0.5" step="0.5" value="${meal.servings}" data-sv="${di}:${mi}" style="width:70px"></label>
@@ -114,9 +147,8 @@ function bind(root, s) {
 function showReplaceDialog(root, di, mi) {
   const s = getState();
   const currentDish = s.dishes.find((d) => d.id === s.menu.days[di].meals[mi].dishId);
-  const mealName = mealPlan(s.regimen.mealsPerDay, targetCalories())[mi]?.name || "Обед";
+  const mealName = mealPlan(s.regimen.mealsPerDay, targetCalories(), targetMacros())[mi]?.name || "Обед";
 
-  // Подходящие блюда для замены: той же категории или все
   const candidates = s.dishes.filter((d) => d.id !== currentDish?.id);
   const sameCat = candidates.filter((d) => d.category === mealName);
   const others = candidates.filter((d) => d.category !== mealName);
@@ -133,7 +165,6 @@ function showReplaceDialog(root, di, mi) {
     </div>`;
   }).join("");
 
-  // Создаём модальное окно
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.innerHTML = `<div class="modal-card">

@@ -57,7 +57,38 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     }),
+  resetPassword: (email, newPassword) =>
+    apiCall("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, newPassword }),
+    }),
   getState: () => apiCall("/state"),
   saveState: (data) =>
     apiCall("/state", { method: "PUT", body: JSON.stringify(data) }),
+
+  // Подписки
+  getSubscriptionStatus: () => apiCall("/subscriptions/status"),
+  createCheckout: (planId, successUrl, cancelUrl) =>
+    apiCall("/subscriptions/checkout", {
+      method: "POST",
+      body: JSON.stringify({ planId, successUrl, cancelUrl }),
+    }),
+  cancelSubscription: () =>
+    apiCall("/subscriptions/cancel", { method: "POST" }),
+
+  // Публичные тарифы
+  getPlans: () => apiCall("/admin/plans"),
+
+  // Админ
+  getAdminStats: () => apiCall("/admin/stats"),
+  getAdminSettings: () => apiCall("/admin/settings"),
+  updatePlans: (plans) =>
+    apiCall("/admin/plans", { method: "PUT", body: JSON.stringify({ plans }) }),
+  updateInitFee: (initFee) =>
+    apiCall("/admin/init-fee", { method: "PUT", body: JSON.stringify({ initFee }) }),
+  updateFreeFeatures: (freeFeatures) =>
+    apiCall("/admin/free-features", {
+      method: "PUT",
+      body: JSON.stringify({ freeFeatures }),
+    }),
 };

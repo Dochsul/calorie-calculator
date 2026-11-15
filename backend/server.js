@@ -4,16 +4,23 @@ import path from "path";
 import { initDb } from "./db.js";
 import authRoutes from "./routes/auth.js";
 import stateRoutes from "./routes/state.js";
+import subscriptionRoutes from "./routes/subscriptions.js";
+import adminRoutes from "./routes/admin.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Raw body для Stripe webhook (нужно ДО express.json)
+app.use("/api/subscriptions/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json({ limit: "10mb" }));
 
 // API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/state", stateRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/admin", adminRoutes);
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 // Serve static frontend files with no-cache headers (dev mode)

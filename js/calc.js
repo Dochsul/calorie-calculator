@@ -1,5 +1,6 @@
-// Расчёт калорийности и КБЖУ — портирован из калькулятора index.html
-// (dochsul.github.io/calorie-calculator). Без фиксированной 1300 ккал.
+// Расчёт калорийности и КБЖУ.
+// Белки: 4 ккал/г, Жиры: 9 ккал/г, Углеводы: 4 ккал/г.
+// Проценты рассчитываются по энергетическому вкладу макронутриентов.
 
 import { PRODUCT_MAP } from "./data.js";
 
@@ -43,6 +44,44 @@ export function calcCalories(client) {
   return calories;
 }
 
+// Энергетический вклад макронутриентов (ккал)
+export function macroEnergy(proteinG, fatG, carbG) {
+  return {
+    protein: proteinG * 4,
+    fat: fatG * 9,
+    carb: carbG * 4,
+  };
+}
+
+// Процентный энергетический вклад каждого макронутриента (сумма = 100%)
+export function macroPercents(proteinG, fatG, carbG) {
+  const e = macroEnergy(proteinG, fatG, carbG);
+  const total = e.protein + e.fat + e.carb;
+  if (total <= 0) return { protein: 0, fat: 0, carb: 0, sum: 0 };
+  return {
+    protein: (e.protein / total) * 100,
+    fat: (e.fat / total) * 100,
+    carb: (e.carb / total) * 100,
+    sum: 100,
+  };
+}
+
+// Граммы из процентов и калорийности
+export function gramsFromPercents(calories, proteinPct, fatPct, carbPct) {
+  const sum = proteinPct + fatPct + carbPct;
+  if (sum <= 0) return { proteins: 0, fats: 0, carbs: 0 };
+  // Нормализуем проценты к 100
+  const p = proteinPct / sum;
+  const f = fatPct / sum;
+  const c = carbPct / sum;
+  return {
+    proteins: (calories * p) / 4,
+    fats: (calories * f) / 9,
+    carbs: (calories * c) / 4,
+  };
+}
+
+// Расчёт БЖУ по умолчанию 30/30/40
 export function calcMacros(calories) {
   return {
     proteins: (calories * 0.3) / 4,
@@ -51,8 +90,49 @@ export function calcMacros(calories) {
   };
 }
 
+// Проверка соответствия граммов БЖУ заявленной калорийности
+// Возвращает расхождение в ккал
+export function macroCalorieDiscrepancy(calories, proteinG, fatG, carbG) {
+  const e = macroEnergy(proteinG, fatG, carbG);
+  const actualCalories = e.protein + e.fat + e.carb;
+  return {
+    actual: Math.round(actualCalories),
+    target: Math.round(calories),
+    diff: Math.round(actualCalories - calories),
+    diffPct: calories > 0 ? Math.round(((actualCalories - calories) / calories) * 100) : 0,
+  };
+}
+
+// Проверка клинической безопасности
+export function validateMacros(calories, proteinG, fatG, carbG, client) {
+  const warnings = [];
+  const c = client || {};
+
+  if (calories < 1000) warnings.push("Калорийность ниже 1000 ккал — это клинически небезопасно.");
+  if (calories < 1200 && !c.isChild) warnings.push("Калорийность ниже 1200 ккал не рекомендуется для взрослых.");
+  if (proteinG < 0.8 * (parseFloat(c.weight) || 70))
+    warnings.push("Белок ниже 0.8 г/кг массы тела — недостаточно для поддержания мышечной массы.");
+  if (fatG < 20) warnings.push("Жиры ниже 20 г — недостаточно для усвоения жирорастворимых витаминов.");
+  if (carbG < 50) warnings.push("Углеводы ниже 50 г — кето-режим, требует медицинского контроля.");
+
+  // Несовершеннолетним нельзя худеть стандартным алгоритмом
+  if (c.isChild && calories < calcCalories(c) * 0.85)
+    warnings.push("Для несовершеннолетних дефицит калорий более 15% небезопасен.");
+
+  const age = parseFloat(c.age) || 30;
+  if (age < 18 && c.goal && c.goal.startsWith("lose"))
+    warnings.push("Стандартный алгоритм похудения недоступен для несовершеннолетних.");
+
+  return { safe: warnings.length === 0, warnings };
+}
+
 // Распределение калорий по приёмам пищи
 const DIST = {
+  3: [
+    { name: "Завтрак", share: 0.30 },
+    { name: "Обед", share: 0.40 },
+    { name: "Ужин", share: 0.30 },
+  ],
   4: [
     { name: "Завтрак", share: 0.3 },
     { name: "Обед", share: 0.35 },
@@ -68,11 +148,15 @@ const DIST = {
   ],
 };
 
-export function mealPlan(count, calories) {
-  const n = count === 5 ? 5 : 4;
-  return DIST[n].map((m) => ({
-    name: m.name,
-    kcal: Math.round(calories * m.share),
+export function mealPlan(count, calories, macros) {
+  const n = [3, 4, 5].includes(count) ? count : 4;
+  const m = macros || calcMacros(calories);
+  return DIST[n].map((meal) => ({
+    name: meal.name,
+    kcal: Math.round(calories * meal.share),
+    proteins: Math.round(m.proteins * meal.share),
+    fats: Math.round(m.fats * meal.share),
+    carbs: Math.round(m.carbs * meal.share),
   }));
 }
 
@@ -80,7 +164,7 @@ export function mealTimes(firstTime, count, intervalHours) {
   const [h, m] = String(firstTime || "08:00").split(":").map(Number);
   const start = h * 60 + (m || 0);
   const step = (parseFloat(intervalHours) || 3) * 60;
-  const n = count === 5 ? 5 : 4;
+  const n = [3, 4, 5].includes(count) ? count : 4;
   return Array.from({ length: n }, (_, i) => {
     const t = start + step * i;
     const hh = String(Math.floor((t / 60) % 24)).padStart(2, "0");

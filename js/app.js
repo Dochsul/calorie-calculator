@@ -1,29 +1,39 @@
 // Точка входа: навигация по вкладкам, первичный рендер и шлюз авторизации.
 import { subscribe } from "./store.js";
-import { subscribeAuth, isAuthenticated, logout, adminMode } from "./auth.js";
+import { subscribeAuth, isAuthenticated, isAdmin, logout } from "./auth.js";
 import { renderAuth } from "./views/auth.js";
 import { renderClient } from "./views/client.js";
+import { renderKbzhu } from "./views/kbzhu.js";
 import { renderPantry } from "./views/pantry.js";
 import { renderMenu } from "./views/menu.js";
 import { renderDishes } from "./views/dishes.js";
 import { renderTemplates } from "./views/templates.js";
 import { renderShopping } from "./views/shopping.js";
 import { renderReport } from "./views/report.js";
+import { renderPaywall } from "./views/paywall.js";
+import { renderAdmin } from "./views/admin.js";
 
 const TABS = [
   { id: "client", label: "Анкета", render: renderClient },
+  { id: "kbzhu", label: "Мой КБЖУ", render: renderKbzhu },
   { id: "pantry", label: "Продукты дома", render: renderPantry },
   { id: "menu", label: "Меню", render: renderMenu },
   { id: "dishes", label: "Блюда", render: renderDishes },
   { id: "report", label: "Дневник", render: renderReport },
   { id: "templates", label: "Шаблоны", render: renderTemplates },
   { id: "shopping", label: "Покупки", render: renderShopping },
+  { id: "paywall", label: "Подписка", render: renderPaywall },
+  { id: "admin", label: "Админ", render: renderAdmin, adminOnly: true },
 ];
 
 let current = "client";
 const main = document.getElementById("app");
 const nav = document.getElementById("nav");
 let navBuilt = false;
+
+function getVisibleTabs() {
+  return TABS.filter((t) => !t.adminOnly || isAdmin());
+}
 
 function showTab(id) {
   current = id;
@@ -34,9 +44,8 @@ function showTab(id) {
 
 function ensureNav() {
   nav.classList.remove("hidden");
-  if (navBuilt) return;
   nav.innerHTML = "";
-  TABS.forEach((t) => {
+  getVisibleTabs().forEach((t) => {
     const b = document.createElement("button");
     b.className = "tab";
     b.dataset.tab = t.id;
@@ -55,6 +64,11 @@ function gate() {
     return;
   }
   ensureNav();
+  // Если текущая вкладка недоступна — сбросить
+  const visible = getVisibleTabs();
+  if (!visible.find((t) => t.id === current)) {
+    current = "client";
+  }
   showTab(current);
 }
 

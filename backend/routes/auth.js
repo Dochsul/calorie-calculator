@@ -24,7 +24,7 @@ router.post("/register", async (req, res) => {
         .json({ error: "Пользователь с таким email уже существует" });
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name",
+      "INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING id, email, name, is_admin",
       [email.toLowerCase(), hash, name || ""]
     );
     const user = result.rows[0];
@@ -33,7 +33,7 @@ router.post("/register", async (req, res) => {
       [user.id, "{}"]
     );
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.is_admin } });
   } catch (err) {
     console.error("Register error:", err);
     res.status(500).json({ error: "Ошибка сервера" });
@@ -47,7 +47,7 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Email и пароль обязательны" });
   try {
     const result = await pool.query(
-      "SELECT id, email, name, password_hash FROM users WHERE email = $1",
+      "SELECT id, email, name, is_admin, password_hash FROM users WHERE email = $1",
       [email.toLowerCase()]
     );
     if (!result.rows.length)
@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
     if (!(await bcrypt.compare(password, user.password_hash)))
       return res.status(401).json({ error: "Неверный email или пароль" });
     const token = signToken(user);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.is_admin } });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "Ошибка сервера" });
@@ -65,7 +65,32 @@ router.post("/login", async (req, res) => {
 
 // Текущий пользователь
 router.get("/me", authMiddleware, (req, res) => {
-  res.json({ id: req.userId, email: req.userEmail });
+  res.json({ id: req.userId, email: req.userEmail, isAdmin: req.isAdmin });
+});
+
+// Восстановление пароля — сброс на новый (упрощённая схема)
+router.post("/reset-password", async (req, res) => {
+  const { email, newPassword } = req.body;
+  if (!email || !newPassword)
+    return res.status(400).json({ error: "Email и новый пароль обязательны" });
+  if (newPassword.length < 6)
+    return res.status(400).json({ error: "Пароль должен быть не менее 6 символов" });
+  try {
+    const result = await pool.query("SELECT id FROM users WHERE email = $1", [
+      email.toLowerCase(),
+    ]);
+    if (!result.rows.length)
+      return res.status(404).json({ error: "Пользователь не найден" });
+    const hash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      "UPDATE users SET password_hash = $1 WHERE email = $2",
+      [hash, email.toLowerCase()]
+    );
+    res.json({ ok: true, message: "Пароль обновлён" });
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
 export default router;
