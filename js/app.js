@@ -1,9 +1,9 @@
-// Точка входа: навигация по вкладкам, первичный рендер и шлюз оплаты (подписка по коду).
+// Точка входа: навигация по вкладкам, первичный рендер и шлюз авторизации.
 import { subscribe } from "./store.js";
-import { subscribeAuth, isActive, adminMode } from "./auth.js";
-import { renderPaywall } from "./views/paywall.js";
-import { renderAdmin } from "./views/admin.js";
+import { subscribeAuth, isAuthenticated, logout, adminMode } from "./auth.js";
+import { renderAuth } from "./views/auth.js";
 import { renderClient } from "./views/client.js";
+import { renderPantry } from "./views/pantry.js";
 import { renderMenu } from "./views/menu.js";
 import { renderDishes } from "./views/dishes.js";
 import { renderTemplates } from "./views/templates.js";
@@ -12,6 +12,7 @@ import { renderReport } from "./views/report.js";
 
 const TABS = [
   { id: "client", label: "Анкета", render: renderClient },
+  { id: "pantry", label: "Продукты дома", render: renderPantry },
   { id: "menu", label: "Меню", render: renderMenu },
   { id: "dishes", label: "Блюда", render: renderDishes },
   { id: "report", label: "Дневник", render: renderReport },
@@ -46,19 +47,26 @@ function ensureNav() {
   navBuilt = true;
 }
 
-// Шлюз: админка → экран оплаты → приложение (когда подписка активна)
+// Шлюз: не авторизован → экран входа; авторизован → приложение
 function gate() {
-  if (adminMode()) { nav.classList.add("hidden"); renderAdmin(main); return; }
-  if (!isActive()) { nav.classList.add("hidden"); renderPaywall(main); return; }
+  if (!isAuthenticated()) {
+    nav.classList.add("hidden");
+    renderAuth(main);
+    return;
+  }
   ensureNav();
   showTab(current);
 }
 
-// Перерисовка текущей вкладки при изменении данных — только когда доступ открыт
+// Перерисовка текущей вкладки при изменении данных
 subscribe(() => {
-  if (isActive() && !adminMode()) { ensureNav(); showTab(current); }
+  if (isAuthenticated()) { ensureNav(); showTab(current); }
 });
-// Переключение между экраном оплаты, админкой и приложением
+
+// Переключение между экраном входа и приложением
 subscribeAuth(gate);
+
+// Обработка выхода (401 от API)
+window.addEventListener("aina-logout", () => gate());
 
 gate();

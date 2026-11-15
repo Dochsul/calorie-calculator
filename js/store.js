@@ -1,5 +1,6 @@
-// Хранилище состояния с сохранением в localStorage
+// Хранилище состояния: localStorage (кэш) + backend (постоянное хранилище)
 import { calcCalories } from "./calc.js";
+import { api } from "./api.js";
 
 const KEY = "aina_evidence_state_v1";
 
@@ -103,6 +104,7 @@ export function defaultState() {
       date: "",
       history: [],
     },
+    pantry: { productIds: [] },
   };
 }
 
@@ -127,6 +129,7 @@ function load() {
         menu: parsed.menu || base.menu,
         templates: { ...base.templates, ...(parsed.templates || {}) },
         diary: { ...base.diary, ...(parsed.diary || {}) },
+        pantry: { ...base.pantry, ...(parsed.pantry || {}) },
       };
       // согласовать число приёмов с режимом
       const n = merged.regimen.mealsPerDay;
@@ -147,6 +150,49 @@ export function persist() {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch (e) {
     console.warn("aina: не удалось сохранить состояние", e);
+  }
+  scheduleBackendSave();
+}
+
+// Debounced save to backend — 1.5s after last change
+let _saveTimer = null;
+function scheduleBackendSave() {
+  if (!api.getToken()) return; // не сохраняем без авторизации
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      await api.saveState(state);
+    } catch (err) {
+      console.warn("aina: не удалось сохранить на сервер", err);
+    }
+  }, 1500);
+}
+
+// Загрузить состояние из backend (после входа) и обновить локальный кэш
+export async function loadFromBackend() {
+  try {
+    const data = await api.getState();
+    const base = defaultState();
+    state = {
+      ...base,
+      ...data,
+      client: { ...base.client, ...(data.client || {}) },
+      regimen: { ...base.regimen, ...(data.regimen || {}) },
+      restrictions: { ...base.restrictions, ...(data.restrictions || {}) },
+      menu: data.menu || base.menu,
+      templates: { ...base.templates, ...(data.templates || {}) },
+      diary: { ...base.diary, ...(data.diary || {}) },
+      pantry: { ...base.pantry, ...(data.pantry || {}) },
+    };
+    const n = state.regimen.mealsPerDay;
+    state.menu.days.forEach((d) => {
+      while (d.meals.length < n) d.meals.push({ dishId: null, servings: 1 });
+      while (d.meals.length > n) d.meals.pop();
+    });
+    localStorage.setItem(KEY, JSON.stringify(state));
+    listeners.forEach((fn) => fn());
+  } catch (err) {
+    console.warn("aina: не удалось загрузить состояние с сервера", err);
   }
 }
 

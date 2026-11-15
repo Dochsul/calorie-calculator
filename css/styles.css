@@ -361,3 +361,49 @@ body, .topbar, .card, .tab, .btn, input, select, textarea,
   .pw-card { padding: 22px 18px; }
   .adm-row .adm-date { margin-left: 0; }
 }
+
+/* --- Auth (вход/регистрация) --- */
+.auth-tabs { display: flex; gap: 0; margin: 16px 0; border-bottom: 2px solid var(--border); }
+.auth-tab { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-size: 15px; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; }
+.auth-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--muted); }
+.auth-form input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-family: inherit; }
+.auth-form input:focus { outline: none; border-color: var(--primary); }
+.auth-hint { text-align: center; color: var(--muted); font-size: 13px; margin-top: 14px; }
+
+/* --- Pantry (продукты дома) --- */
+.pantry-actions { display: flex; gap: 8px; margin: 12px 0; }
+.pantry-group { margin-bottom: 16px; }
+.pantry-group h3 { font-size: 14px; color: var(--primary); margin-bottom: 8px; }
+.pantry-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.pantry-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 13px; transition: all .15s; }
+.pantry-chip:hover { border-color: var(--primary); }
+.pantry-chip.checked { background: var(--primary); border-color: var(--primary); color: var(--cream); }
+.pantry-chip.checked small { color: var(--cream); opacity: .8; }
+.pantry-chip input { display: none; }
+.pantry-chip small { color: var(--muted); font-size: 11px; }
+
+/* --- Menu toolbar --- */
+.menu-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+
+/* --- Slot actions (replace button) --- */
+.slot-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+
+/* --- Modal (replace dialog) --- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-card { background: var(--cream); border-radius: 12px; padding: 24px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
+.modal-card .card-head { margin-bottom: 12px; }
+.replace-list { display: flex; flex-direction: column; gap: 8px; }
+.replace-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.replace-row:hover { border-color: var(--primary); }
+.replace-row > div:first-child { flex: 1; }
+.replace-row .mass { font-size: 12px; color: var(--muted); }
+.replace-row .tag { font-size: 11px; }
+
+@media (max-width: 600px) {
+  .pantry-items { gap: 6px; }
+  .pantry-chip { padding: 5px 10px; font-size: 12px; }
+  .modal-card { padding: 16px; }
+  .replace-row { flex-direction: column; align-items: stretch; gap: 6px; }
+}

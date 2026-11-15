@@ -1,0 +1,6 @@
+{
+  "watch": ["."],
+  "ext": "js",
+  "delay": "1000",
+  "ignore": ["node_modules"]
+}
